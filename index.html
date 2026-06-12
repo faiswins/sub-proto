@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="robots" content="noindex,nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>FATHOM — Deep-Sea Descent</title>
@@ -187,6 +187,7 @@ button{font-family:var(--sans);cursor:pointer;border:none;position:relative;min-
 button:active{transform:translateY(1px)}
 button:focus-visible{outline:2px solid var(--lume);outline-offset:2px}
 .descend{font-weight:700;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;padding:17px;border-radius:4px;
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   color:var(--lume);background:linear-gradient(180deg,#1B2A24,#101814);
   border:1px solid var(--lume-deep);box-shadow:inset 0 1px 0 rgba(168,240,192,0.10),0 8px 20px rgba(0,0,0,0.4)}
 .descend:hover{filter:brightness(1.15);color:var(--lume-bright)}
@@ -379,7 +380,7 @@ footer{font-family:var(--sans);font-size:10.5px;color:var(--steel-mute);text-ali
             <canvas id="gauge" width="344" height="344"></canvas>
             <div class="gauge-center">
               <div class="g-mult" id="gmult">1.00<span class="x">×</span></div>
-              <div class="g-depth" id="gdepth">— / 9</div>
+              <div class="g-depth" id="gdepth">0%</div>
               <div class="g-zone" id="gzone">Surface</div>
               <div class="g-tier" id="gtier"></div>
             </div>
@@ -388,12 +389,12 @@ footer{font-family:var(--sans);font-size:10.5px;color:var(--steel-mute);text-ali
         <div class="divider"></div>
         <div class="next">
           <div>
-            <div class="lab">Next zone</div>
+            <div class="lab">Current zone</div>
             <div class="zoneName" id="nextname">—</div>
             <div class="carrot" id="carrot">&nbsp;</div>
           </div>
           <div style="text-align:right">
-            <div class="lab">Survive odds</div>
+            <div class="lab">Jackpot odds</div>
             <div class="odds hidden" id="odds">—</div>
           </div>
         </div>
@@ -402,16 +403,16 @@ footer{font-family:var(--sans);font-size:10.5px;color:var(--steel-mute);text-ali
       <div class="cstack">
       <div class="card is-off" id="divectrl">
         <div class="chrono hidden" id="clock">
-          <span class="chrono-lab">Decision</span>
+          <span class="chrono-lab">Auto-surface</span>
           <div class="chrono-track"><div class="chrono-fill" id="clockfill"></div></div>
           <span class="chrono-num" id="clocknum">8.0s</span>
         </div>
         <div class="btns">
-          <button class="descend" id="descend">Descend ▼</button>
+          <button class="descend" id="descend">Hold to dive ▼</button>
           <button class="ghost" id="banktwo">Bank half<small id="bankamt">&nbsp;</small></button>
           <button class="surface" id="surface">Surface &amp; collect</button>
         </div>
-        <div class="msg" id="msg2">Decide before the clock runs out. If it does, you surface and keep your haul.</div>
+        <div class="msg" id="msg2">Hold <b>Descend</b> to dive. Let go to hover safely, then surface to bank. Hover too long and you auto-surface.</div>
       </div>
 
       <div class="card stake" id="startctrl">
@@ -484,28 +485,26 @@ const sfx={
 $('snd').onclick=()=>{soundOn=!soundOn;$('snd').textContent=soundOn?'♪':'∅';$('snd').classList.toggle('off',!soundOn);if(soundOn)sfx.click();};
 
 /* ---------- model ---------- */
-const RTP=0.96;   // base-game return. The jackpot is funded by a 1% wager contribution (JP_RATE),
-                  // so total return to player = 96% base + 1% progressive = 97%, house edge = 3%.
-const ZONES=[
-  {name:'The Shelf',   s:0.92},
-  {name:'Reef Wall',   s:0.88},
-  {name:'Twilight',    s:0.84},
-  {name:'Midnight',    s:0.80},
-  {name:'Bathyal',     s:0.75},
-  {name:'Abyssal',     s:0.70},
-  {name:'Hadal',       s:0.64},
-  {name:'The Trench',  s:0.57},
-  {name:'The Sounding',s:0.50},
+const RTP=0.96;     // base-game return; +1% progressive jackpot = 97% total, 3% house edge
+const M_FLOOR=100;  // multiplier at the sea floor. Jackpot odds = RTP / M_FLOOR ≈ 0.96%
+const DIVE_MS=8000; // seconds of continuous holding to descend from surface to the floor
+const GAMMA=2.2;    // depth→multiplier shaping: gentle/slow near the surface, steep in the deep.
+                    // Spreads the dive across the tank so typical dives descend before crashing.
+                    // Purely visual pacing — does NOT change odds (crash is decided in multiplier-space).
+const ZONES=[       // visual depth markers along the continuous descent
+  {name:'The Shelf'},{name:'Reef Wall'},{name:'Twilight'},{name:'Midnight'},
+  {name:'Bathyal'},{name:'Abyssal'},{name:'Hadal'},{name:'The Trench'},{name:'The Sounding'},
 ];
-const N=ZONES.length;
-const cum=[1]; for(let k=1;k<=N;k++)cum[k]=cum[k-1]*ZONES[k-1].s;
-const MULT=[1]; for(let k=1;k<=N;k++)MULT[k]=RTP/cum[k];
-const TIERS=[[8,'Sounding Survivor'],[6,'Trench Runner'],[4,'Abyss Diver'],[2,'Deep Hand']];
-const DECIDE_MS=8000;
+const N=ZONES.length;                          // 9 named markers
+const LV=N+1;                                  // total levels including the floor
+const markerM=k=>Math.pow(M_FLOOR,Math.pow(k/LV,GAMMA)); // multiplier at evenly-spaced level k (0..LV)
+const TIERS=[[40,'Sounding Survivor'],[14,'Trench Runner'],[5,'Abyss Diver'],[2,'Deep Hand']];
+const DECIDE_MS=8000; // hover auto-surface timeout
 
 /* ---------- state ---------- */
-let balance=1000,state='idle',stake=0,work=0,depth=0,banked=0;
-let seed='',hash='',rolls=[],log=[],bubbles=[],motes=[];
+let balance=1000,state='idle',stake=0,work=0,banked=0;
+let p=0,M=1,Mcrash=Infinity,holding=false,lastT=0,crashed=false,lastLevel=0;
+let seed='',hash='',uRoll=0,log=[],bubbles=[],motes=[];
 
 /* ---------- progressive jackpot ---------- */
 const JP_SEED=5000, JP_RATE=0.01;            // pool reseed floor; player contribution per wager
@@ -519,7 +518,9 @@ function randHex(n){const a=new Uint8Array(n);crypto.getRandomValues(a);return [
 async function sha(s){const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join('');}
 async function genDive(){
   seed=randHex(16);hash=await sha(seed);
-  rolls=await Promise.all(ZONES.map(async(_,i)=>{const h=await sha(seed+':'+(i+1));return parseInt(h.slice(0,8),16)/0xFFFFFFFF;}));
+  const h=await sha(seed+':crash');
+  uRoll=parseInt(h.slice(0,8),16)/0x100000000;   // uniform [0,1)
+  Mcrash=RTP/(1-uRoll);                            // P(Mcrash ≥ m) = RTP/m  →  constant-RTP crash
 }
 
 /* ---------- balance ---------- */
@@ -546,15 +547,22 @@ function timerLoop(){
 function timeUp(){timerStop();if(state==='diving')surface(true);}
 
 /* ---------- render ---------- */
-function haulNow(){return work*MULT[depth];}
+function haulNow(){return work*M;}
+function zoneNameAt(pp){const lv=Math.floor(pp*LV+1e-9);if(lv<=0)return'Surface';if(lv>=LV)return'The Maw';return ZONES[Math.min(lv,N)-1].name;}
+function liveUpdate(){            // cheap per-frame HUD refresh while descending
+  const h=work*M;
+  $('haul').textContent=fmt(h);
+  $('haulsub').innerHTML=(banked>0?('Banked <b>'+fmt(banked)+'</b> · '):'')+'<b>'+M.toFixed(2)+'×</b> · at risk <b>'+fmt(h)+'</b>';
+  $('gmult').innerHTML=M.toFixed(2)+'<span class="x">×</span>';
+  $('gzone').textContent=zoneNameAt(p);$('gdepth').textContent=Math.round(p*100)+'%';
+}
 function render(){
-  const diving=(state==='diving'||state==='descending');
   $('divectrl').classList.toggle('is-off',state==='idle');
   $('startctrl').classList.toggle('is-off',state!=='idle');
 
-  $('gmult').innerHTML=(state==='idle'?'1.00':MULT[depth].toFixed(2))+'<span class="x">×</span>';
-  $('gdepth').textContent=(state==='idle'?'—':depth)+' / '+N;
-  $('gzone').textContent=(state==='idle'||depth===0)?'Surface':ZONES[depth-1].name;
+  $('gmult').innerHTML=(state==='idle'?'1.00':M.toFixed(2))+'<span class="x">×</span>';
+  $('gdepth').textContent=(state==='idle'?'—':Math.round(p*100)+'%');
+  $('gzone').textContent=(state==='idle')?'Surface':zoneNameAt(p);
 
   if(state==='idle'){
     $('haul').textContent='0.00';$('haul').className='haul zero';
@@ -562,24 +570,19 @@ function render(){
     $('odds').textContent='—';$('odds').className='odds hidden';
     return;
   }
-  const h=haulNow();
+  const h=work*M;
   $('haul').textContent=fmt(h);
-  $('haulsub').innerHTML=(banked>0?('Banked <b>'+fmt(banked)+'</b> · '):'')+'<b>'+MULT[depth].toFixed(2)+'×</b> · at risk <b>'+fmt(h)+'</b>';
+  $('haulsub').innerHTML=(banked>0?('Banked <b>'+fmt(banked)+'</b> · '):'')+'<b>'+M.toFixed(2)+'×</b> · at risk <b>'+fmt(h)+'</b>';
 
-  if(depth<N){
-    const z=ZONES[depth],lastStep=(depth===N-1);
-    $('nextname').textContent=z.name;
-    $('carrot').innerHTML=lastStep
-      ? 'reach '+MULT[depth+1].toFixed(2)+'× <b class="gold">+ JACKPOT</b>'
-      : 'reach '+MULT[depth+1].toFixed(2)+'× → '+fmt(work*MULT[depth+1])+' CR';
-    const o=$('odds');const pct=Math.round(z.s*100);o.textContent=pct+'%';o.className='odds'+(pct<65?' bad':'');
-  }else{$('nextname').textContent='Sea floor';$('carrot').innerHTML='surface to claim <b class="gold">◆ '+fmt(jackpot)+'</b>';$('odds').textContent='—';$('odds').className='odds hidden';}
+  $('nextname').textContent=zoneNameAt(p);
+  $('carrot').innerHTML='floor <b class="gold">'+M_FLOOR+'× ◆ JACKPOT</b>';
+  $('odds').textContent=(RTP/M_FLOOR*100).toFixed(2)+'%';$('odds').className='odds';
 
-  const live=(state==='diving'),h2=h;
-  $('descend').disabled=!live||depth>=N;
-  $('descend').textContent=depth>=N?'At the floor':'Descend ▼';
+  const live=(state==='diving');
+  $('descend').disabled=!live||p>=1;
+  $('descend').textContent=p>=1?'At the floor':'Hold to dive ▼';
   $('surface').disabled=!live;
-  $('banktwo').disabled=!live||h2<2;$('bankamt').textContent='+'+fmt(h2/2);
+  $('banktwo').disabled=!live||h<2;$('bankamt').textContent='+'+fmt(h/2);
 }
 
 /* ---------- celebration ---------- */
@@ -588,93 +591,99 @@ function countUp(el,to,dur){
   const t0=performance.now();
   (function step(now){const p=Math.min(1,(now-t0)/dur);const e=1-Math.pow(1-p,3);el.textContent='+'+fmt(to*e);if(p<1)requestAnimationFrame(step);})(t0);
 }
-function celebrate(d,total,jp){
-  const tier=TIERS.find(t=>d>=t[0]);if(!tier&&!jp)return;
+function celebrate(mult,total,jp){
+  const tier=TIERS.find(t=>mult>=t[0]);if(!tier&&!jp)return;
   const isJp=jp>0;
   $('celetier').textContent=isJp?'PROGRESSIVE JACKPOT':tier[1];
   countUp($('celeamt'),total,isJp?1100:720);
-  $('celesub').textContent=isJp?('Jackpot pool of '+fmt(jp)+' CR claimed'):('Surfaced from '+d+' / '+N);
+  $('celesub').textContent=isJp?('Jackpot pool of '+fmt(jp)+' CR claimed'):('Surfaced at '+mult.toFixed(2)+'×');
   const c=$('cele');c.classList.add('show');c.classList.toggle('jp',isJp);
   if(isJp){const jb=$('jackpot');jb.classList.add('win');setTimeout(()=>jb.classList.remove('win'),700);}
   const gt=$('gtier');gt.textContent=isJp?'JACKPOT':tier[1];gt.style.display='block';
   $('gmult').style.display='none';$('gdepth').style.display='none';$('gzone').style.display='none';
-  brassShimmer(isJp?140:(d>=6?72:44));
+  brassShimmer(isJp?140:(mult>=14?72:44));
   if(isJp)setTimeout(()=>brassShimmer(90),420);
   setTimeout(()=>{c.classList.remove('show');gt.style.display='none';
     $('gmult').style.display='';$('gdepth').style.display='';$('gzone').style.display='';},isJp?3200:2200);
 }
 
-/* ---------- dive flow ---------- */
+/* ---------- dive flow (continuous) ---------- */
 async function launch(){
   const amt=Math.floor(Number($('stake').value));
   if(!amt||amt<1){$('msg').textContent='Enter a stake of at least 1 credit.';return;}
   if(amt>balance){$('msg').textContent='Stake exceeds your balance.';return;}
   sfx.click();setBal(balance-amt);
   jackpot+=amt*JP_RATE;renderJackpot();
-  stake=amt;work=amt;depth=0;banked=0;
+  stake=amt;work=amt;p=0;M=1;banked=0;crashed=false;holding=false;lastLevel=0;
   state='descending';render();
   await genDive();
   state='diving';$('haul').className='haul';
-  $('fair').innerHTML='<span class="k">COMMITTED HASH</span><br>'+hash.slice(0,52)+'…<br>Seed is revealed when the dive ends.';
-  $('msg2').innerHTML='Dive sealed. Descend for '+MULT[1].toFixed(2)+'×, or surface to reclaim your stake.';
-  gTarget=0;subTarget=0;subY=yFor(0);render();timerStart();
+  $('fair').innerHTML='<span class="k">COMMITTED HASH</span><br>'+hash.slice(0,52)+'…<br>Crash point is revealed when the dive ends.';
+  $('msg2').innerHTML='Dive sealed. <b>Hold Descend</b> to dive — release to hover, surface to bank.';
+  subY=yForP(0);liveUpdate();render();timerStart();
 }
-function descend(){
-  if(state!=='diving'||depth>=N)return;
-  timerStop();state='descending';render();sfx.descend();gTarget=depth+1;subTarget=depth+1;
-  const z=ZONES[depth],survived=rolls[depth]<=z.s,wait=reduce?120:260;
-  $('msg2').textContent='Descending into '+z.name+'…';
-  setTimeout(()=>{
-    if(survived){
-      depth++;state='diving';burst(10);sfx.clear();$('haul').className='haul';
-      $('msg2').innerHTML='Cleared <b>'+z.name+'</b> at '+MULT[depth].toFixed(2)+'× — haul <b class="gold">'+fmt(haulNow())+'</b> CR.';
-      if(depth>=N)$('msg2').innerHTML+=' Floor reached — surface to collect.';
-      render();timerStart();
-    }else bust(z);
-  },wait);
+function holdStart(e){
+  if(state!=='diving'||crashed||p>=1)return;
+  if(e&&e.preventDefault)e.preventDefault();
+  holding=true;timerStop();sfx.descend&&sfx.descend();
+  $('msg2').innerHTML='Descending… release to lock in your haul.';
+}
+function holdEnd(){
+  if(!holding)return;holding=false;
+  if(state==='diving'){
+    sfx.clear&&sfx.clear();
+    $('msg2').innerHTML='Holding at <b>'+M.toFixed(2)+'×</b> — <b class="gold">'+fmt(work*M)+'</b> CR at risk. Surface to bank, or hold to dive on.';
+    render();timerStart();
+  }
+}
+function reachFloor(){
+  if(state!=='diving')return;
+  holding=false;p=1;M=M_FLOOR;
+  surface(false,true);
 }
 function bankHalf(){
   if(state!=='diving')return;
-  const h=haulNow(),take=h/2;setBal(balance+take,'up');banked+=take;work=work/2;sfx.bank();
-  $('msg2').innerHTML='Banked <b>'+fmt(take)+'</b> CR. Clock still running — <b class="gold">'+fmt(haulNow())+'</b> remains at risk.';
-  render();
+  const h=work*M,take=h/2;setBal(balance+take,'up');banked+=take;work=work/2;sfx.bank();
+  $('msg2').innerHTML='Banked <b>'+fmt(take)+'</b> CR. <b class="gold">'+fmt(work*M)+'</b> still at risk.';
+  liveUpdate();render();
 }
-function surface(auto){
+function surface(auto,floor){
   if(state!=='diving')return;
-  timerStop();const h=haulNow();
-  const hitJackpot=(depth>=N);
+  timerStop();holding=false;
+  const h=work*M, hitJackpot=!!floor;
   const jp=hitJackpot?awardJackpot():0;
   setBal(balance+h+jp,'up');burst(20);
   const total=banked+h+jp;state='done';$('haul').className='haul win';
-  if(hitJackpot){sfx.bigwin&&sfx.bigwin();celebrate(depth,total,jp);
-    $('msg2').innerHTML='<b class="gold">THE SOUNDING.</b> You touched the floor and surfaced with the <b class="gold">progressive jackpot</b> — <b>'+fmt(total)+'</b> CR.';
+  if(hitJackpot){sfx.bigwin&&sfx.bigwin();celebrate(M,total,jp);
+    $('msg2').innerHTML='<b class="gold">THE MAW.</b> You rode the dive to the floor and claimed the <b class="gold">progressive jackpot</b> — <b>'+fmt(total)+'</b> CR.';
   }else{
-    (depth>=4?sfx.bigwin:sfx.win)();celebrate(depth,total,0);
-    $('msg2').innerHTML=(auto?'<b>Clock expired</b> — surfaced automatically. ':'')+'Surfaced from <b>'+(depth?ZONES[depth-1].name:'surface')+'</b> — collected <b>'+fmt(total)+'</b> CR.';
+    (M>=5?sfx.bigwin:sfx.win)();celebrate(M,total,0);
+    $('msg2').innerHTML=(auto?'<b>Hover expired</b> — surfaced automatically. ':'')+'Surfaced at <b>'+M.toFixed(2)+'×</b> — collected <b>'+fmt(total)+'</b> CR.';
   }
   finish(true,total);
 }
-function bust(z){
-  timerStop();state='done';sfx.breach();
-  $('haul').textContent=fmt(haulNow());$('haul').className='haul lost';
-  $('msg2').innerHTML='Hull breach in <b class="lost">'+z.name+'</b>. At-risk haul lost'+(banked>0?', <b>'+fmt(banked)+'</b> CR kept from banking.':'.');
+function bust(){
+  timerStop();state='done';crashed=true;holding=false;sfx.breach();
+  $('haul').textContent=fmt(work*M);$('haul').className='haul lost';
+  $('msg2').innerHTML='Hull breach at <b class="lost">'+M.toFixed(2)+'×</b>. At-risk haul lost'+(banked>0?', <b>'+fmt(banked)+'</b> CR kept from banking.':'.');
   finish(false,banked);
 }
 function finish(win,total){
   timerStop();
-  $('fair').innerHTML='<span class="k">HASH</span> '+hash.slice(0,36)+'…<br><span class="k">SEED</span> '+seed+'<br><span class="k">ROLLS</span> '+
-    rolls.map((r,i)=>(i+1)+(r<=ZONES[i].s?'✓':'✕')).join('  ');
-  log.unshift({d:depth,zone:depth?ZONES[depth-1].name:'Surface',win,total});log=log.slice(0,8);
+  $('fair').innerHTML='<span class="k">SEED</span> '+seed+'<br><span class="k">ROLL</span> '+uRoll.toFixed(6)+
+    '<br><span class="k">CRASH</span> '+(Mcrash>M_FLOOR?'> '+M_FLOOR+'×':Mcrash.toFixed(2)+'×')+
+    ' &nbsp;<span class="k">verify</span> '+RTP+'/(1−roll)';
+  log.unshift({m:M,zone:zoneNameAt(p),win,total});log=log.slice(0,8);
   $('log').innerHTML=log.map(e=>(
-    '<div class="logline '+(e.win?'win':'loss')+'"><span><span class="d">'+(e.win?'▲':'✕')+' '+e.d+'/'+N+'</span> <span class="z">'+e.zone+'</span></span>'+
+    '<div class="logline '+(e.win?'win':'loss')+'"><span><span class="d">'+(e.win?'▲':'✕')+' '+e.m.toFixed(2)+'×</span> <span class="z">'+e.zone+'</span></span>'+
     '<span class="amt">'+(e.win?'+':'')+fmt(e.total)+'</span></div>')).join('');
   render();
-  setTimeout(()=>{state='idle';$('msg').textContent=win?'Dive logged. Set your next stake.':'The trench keeps what it takes. Dive again when ready.';render();},2600);
+  setTimeout(()=>{state='idle';p=0;M=1;$('msg').textContent=win?'Dive logged. Set your next stake.':'The trench keeps what it takes. Dive again when ready.';render();},2600);
 }
 
 /* ---------- sounding profile (living deep-sea scene) ---------- */
 const cv=$('col'),cx=cv.getContext('2d');
-let subY=0,subVel=0,subTarget=0,lastDepth=-1;
+let subY=0,subVel=0;
 let rays=[],creatures=[],ripples=[],brass=[];
 function sizeCol(){const r=cv.parentElement.getBoundingClientRect();const w=Math.round(r.width*devicePixelRatio),h=Math.round(r.height*devicePixelRatio);if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}}
 window.addEventListener('resize',()=>{sizeCol();sizeGauge();});
@@ -686,7 +695,7 @@ function initFx(){
 }
 function burst(n){for(let i=0;i<n;i++)bubbles.push({x:0.5+(Math.random()-0.5)*0.10,y:subY/cv.height,v:0.0022+Math.random()*0.0035,r:Math.random()*2.4+1,a:0.9});}
 function brassShimmer(n){for(let i=0;i<n;i++)brass.push({x:Math.random(),y:0.45+Math.random()*0.5,vy:-0.0014-Math.random()*0.0024,r:Math.random()*2.6+1.4,a:0.98,tw:Math.random()*6.3});}
-function yFor(d){const H=cv.height,top=H*0.15,bot=H*0.90;return top+(d/N)*(bot-top);}
+function yForP(pp){const H=cv.height,top=H*0.13,bot=H*0.93;return top+Math.max(0,Math.min(1,pp))*(bot-top);}
 
 function drawSub(px,py,vel,breach,dpr,t){
   cx.save();cx.translate(px,py);
@@ -733,6 +742,16 @@ function drawSub(px,py,vel,breach,dpr,t){
 
 function drawCol(t){
   const W=cv.width,H=cv.height,dpr=devicePixelRatio;
+  // ---- continuous dive physics ----
+  if(!lastT)lastT=t;const dt=Math.min(64,t-lastT);lastT=t;
+  if(state==='diving'&&holding&&!crashed){
+    p+=dt/DIVE_MS;
+    const pc=Math.min(p,1);
+    M=Math.pow(M_FLOOR,Math.pow(pc,GAMMA));
+    if(M>=Mcrash){M=Mcrash;bust();}
+    else if(p>=1){M=M_FLOOR;reachFloor();}
+    else liveUpdate();
+  }
   // water column
   const g=cx.createLinearGradient(0,0,0,H);
   g.addColorStop(0,'#16294C');g.addColorStop(0.4,'#0C1832');g.addColorStop(0.75,'#070E20');g.addColorStop(1,'#04070E');
@@ -741,22 +760,22 @@ function drawCol(t){
   if(!reduce)for(const ry of rays){const sway=Math.sin(t*ry.sp+ry.ph)*0.03,x0=(ry.x+sway)*W;
     const lg=cx.createLinearGradient(0,0,0,H*0.5);lg.addColorStop(0,'rgba(150,205,255,0.06)');lg.addColorStop(1,'rgba(150,205,255,0)');
     cx.fillStyle=lg;cx.beginPath();cx.moveTo(x0-ry.w*W*0.3,0);cx.lineTo(x0+ry.w*W*0.3,0);cx.lineTo(x0+ry.w*W,H*0.5);cx.lineTo(x0-ry.w*W,H*0.5);cx.closePath();cx.fill();}
-  // zone bands + labels
+  // zone markers + labels (evenly spaced levels; floor = jackpot)
   cx.textBaseline='middle';
-  for(let k=0;k<=N;k++){const y=yFor(k);
+  for(let k=0;k<=LV;k++){const y=yForP(k/LV);
     cx.strokeStyle='rgba(200,214,238,0.08)';cx.lineWidth=1;cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke();
     cx.fillStyle='rgba(124,140,166,0.5)';cx.font='500 '+(8.5*dpr)+'px "Spline Sans Mono"';cx.textAlign='left';cx.fillText(String(k).padStart(2,'0'),11*dpr,y);
-    if(k<N){const z=ZONES[k],ym=(y+yFor(k+1))/2,passed=(state!=='idle'&&depth>k),here=(state!=='idle'&&depth===k),last=(k===N-1);
-      if(last){const bg=cx.createLinearGradient(0,y,0,yFor(k+1));bg.addColorStop(0,'rgba(216,194,142,0.03)');bg.addColorStop(1,'rgba(216,194,142,0.16)');cx.fillStyle=bg;cx.fillRect(0,y,W,yFor(k+1)-y);}
+    if(k>=1&&k<=N){const ym=(y+yForP((k+1)/LV))/2,curLv=p*LV,passed=(state!=='idle'&&curLv>k),here=(state!=='idle'&&Math.floor(curLv)+1===k),last=(k===N);
+      if(last){const bg=cx.createLinearGradient(0,y,0,yForP((k+1)/LV));bg.addColorStop(0,'rgba(216,194,142,0.03)');bg.addColorStop(1,'rgba(216,194,142,0.14)');cx.fillStyle=bg;cx.fillRect(0,y,W,yForP((k+1)/LV)-y);}
       cx.font='600 '+(10*dpr)+'px Poppins';cx.textAlign='left';
       cx.fillStyle=passed?'rgba(191,224,255,0.6)':(here?'rgba(242,246,252,0.95)':(last?'rgba(255,224,150,0.85)':'rgba(150,166,194,0.7)'));
-      cx.fillText(z.name,28*dpr,ym);
+      cx.fillText(ZONES[k-1].name,28*dpr,ym);
       cx.font='600 '+(10*dpr)+'px "Spline Sans Mono"';cx.textAlign='right';
-      cx.fillStyle=last?'rgba(255,224,150,0.95)':'rgba(216,194,142,0.7)';cx.fillText(MULT[k+1].toFixed(2)+'×',W-11*dpr,ym);
+      cx.fillStyle=last?'rgba(255,224,150,0.95)':'rgba(216,194,142,0.7)';cx.fillText(markerM(k).toFixed(2)+'×',W-11*dpr,ym);
     }
   }
   // live jackpot pool sits at the sea floor — the prize for surfacing from the deepest stage
-  {const yB=yFor(N);cx.textAlign='center';cx.textBaseline='middle';
+  {const yB=yForP(1);cx.textAlign='center';cx.textBaseline='middle';
    if(!reduce){cx.shadowColor='rgba(255,200,90,0.45)';cx.shadowBlur=9*dpr;}
    cx.fillStyle='rgba(255,232,170,0.95)';cx.font='800 '+(11*dpr)+'px Poppins';
    cx.fillText('◆ '+fmt(jackpot),W*0.5,(yB+H)/2);cx.shadowBlur=0;}
@@ -787,27 +806,28 @@ function drawCol(t){
     cx.fillStyle='rgba(255,222,150,'+(p.a*tw).toFixed(3)+')';cx.beginPath();cx.arc(p.x*W,p.y*H,p.r*dpr,0,6.3);cx.fill();cx.shadowBlur=0;}
   // submersible
   if(state!=='idle'){
-    const tgt=yFor(subTarget);
-    if(reduce){subY=tgt;subVel=0;}else{subVel+=(tgt-subY)*0.07;subVel*=0.80;subY+=subVel;}
-    if(depth!==lastDepth){if(lastDepth>=0&&depth>lastDepth){ripples.push({y:yFor(depth),rad:6*dpr,a:0.6});const gm=$('gmult');if(gm&&!reduce){gm.classList.remove('pop');void gm.offsetWidth;gm.classList.add('pop');}}lastDepth=depth;}
+    const tgt=yForP(p);
+    if(reduce){subY=tgt;subVel=0;}else{subVel+=(tgt-subY)*0.10;subVel*=0.82;subY+=subVel;}
+    const curLv=Math.floor(p*LV);
+    if(curLv!==lastLevel){if(curLv>lastLevel){ripples.push({y:yForP(curLv/LV),rad:6*dpr,a:0.6});const gm=$('gmult');if(gm&&!reduce){gm.classList.remove('pop');void gm.offsetWidth;gm.classList.add('pop');}}lastLevel=curLv;}
     const breach=(state==='done'&&log[0]&&!log[0].win);
     cx.strokeStyle='rgba(200,214,238,0.10)';cx.lineWidth=1;cx.setLineDash([2*dpr,4*dpr]);cx.beginPath();cx.moveTo(34*dpr,subY);cx.lineTo(W-12*dpr,subY);cx.stroke();cx.setLineDash([]);
     if(!reduce&&Math.abs(subVel)>1.2*dpr){for(let i=0;i<3;i++){const sx=W*0.5+(Math.random()-0.5)*30*dpr;cx.strokeStyle='rgba(191,224,255,0.10)';cx.lineWidth=1*dpr;cx.beginPath();cx.moveTo(sx,subY-14*dpr);cx.lineTo(sx,subY-26*dpr);cx.stroke();}
       bubbles.push({x:0.5+(Math.random()-0.5)*0.04,y:(subY-16*dpr)/H,v:0.0025+Math.random()*0.003,r:Math.random()*2+0.8,a:0.7});}
     drawSub(W*0.5,subY+(reduce?0:Math.sin(t*0.0022)*2.5*dpr),subVel/dpr,breach,dpr,t);
-  }else{lastDepth=-1;}
+  }else{lastLevel=0;}
   requestAnimationFrame(drawCol);
 }
 
 /* ---------- bezel gauge (signature) ---------- */
 const gv=$('gauge'),gx=gv.getContext('2d');
-let gDepth=0,gVel=0,gTarget=0;
+let gDepth=0,gVel=0;
 function sizeGauge(){const dpr=devicePixelRatio;gv.width=172*dpr;gv.height=172*dpr;}
 const A0=150*Math.PI/180, SWEEP=240*Math.PI/180;
 function drawGauge(t){
   const dpr=devicePixelRatio,W=gv.width,c=W/2,R=W*0.46;
   gx.clearRect(0,0,W,W);
-  const tgt=state==='idle'?0:gTarget;
+  const tgt=state==='idle'?0:p*N;
   if(reduce){gDepth=tgt;gVel=0;}else{gVel+=(tgt-gDepth)*0.06;gVel*=0.80;gDepth+=gVel;}
   const breach=(state==='done'&&log[0]&&!log[0].win);
   // dial face
@@ -840,16 +860,24 @@ function drawGauge(t){
 /* ---------- live feed ---------- */
 const NAMES=['Nereid','Pelagic','Sonar 7','Meridian','Cousteau','Triton','Vantablack','Ballast','Kraken','Silt','Blue Hole','Marianas'];
 function entry(){
-  const n=NAMES[Math.floor(Math.random()*NAMES.length)],d=1+Math.floor(Math.random()*N);
-  if(Math.random()<0.62){const amt=MULT[d]*[10,25,50,100][Math.floor(Math.random()*4)];
-    return '<span class="entry ok"><span class="who">'+n+'</span> · '+d+'/'+N+' · <b>+'+fmt(amt)+'</b></span>';}
-  return '<span class="entry ko"><span class="who">'+n+'</span> · breached '+d+'/'+N+' · <b>0.00</b></span>';
+  const n=NAMES[Math.floor(Math.random()*NAMES.length)];
+  if(Math.random()<0.62){const mx=1.2+Math.random()*Math.random()*22, amt=mx*[10,25,50,100][Math.floor(Math.random()*4)];
+    return '<span class="entry ok"><span class="who">'+n+'</span> · '+mx.toFixed(2)+'× · <b>+'+fmt(amt)+'</b></span>';}
+  const mx=1.1+Math.random()*Math.random()*30;
+  return '<span class="entry ko"><span class="who">'+n+'</span> · breached '+mx.toFixed(2)+'× · <b>0.00</b></span>';
 }
 function buildTicker(){let s='';for(let i=0;i<16;i++)s+=entry();$('ticker').innerHTML=s+s;}
 
 /* ---------- inputs ---------- */
-$('launch').onclick=launch;$('descend').onclick=descend;$('surface').onclick=()=>surface(false);
+$('launch').onclick=launch;$('surface').onclick=()=>surface(false);
 $("banktwo").onclick=bankHalf;
+(function(){const d=$('descend');
+  d.addEventListener('pointerdown',holdStart);
+  d.addEventListener('pointerup',holdEnd);
+  d.addEventListener('pointerleave',holdEnd);
+  d.addEventListener('pointercancel',holdEnd);
+  d.addEventListener('contextmenu',e=>e.preventDefault());
+})();
 document.querySelectorAll('.chip').forEach(c=>{c.onclick=()=>{sfx.click();$('stake').value=c.dataset.v==='max'?Math.floor(balance):c.dataset.v;};});
 
 /* ---------- boot ---------- */
