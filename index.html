@@ -1206,6 +1206,12 @@ newClientSeed();commitServer().then(fairPanel);
 })();
 
 })();
+/* delegated modal close — works regardless of script/DOM order (close buttons + backdrop) */
+document.addEventListener('click',function(e){
+  var cl=e.target.closest&&e.target.closest('.modal-close');
+  if(cl){var md=cl.closest('.modal');if(md)md.classList.remove('open');return;}
+  if(e.target.classList&&e.target.classList.contains('modal'))e.target.classList.remove('open');
+});
 </script>
 
 <div class="vtoast" id="vtoast" role="status" aria-live="polite"></div>
