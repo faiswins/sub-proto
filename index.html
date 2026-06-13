@@ -444,6 +444,14 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .set-tgl:hover{border-color:var(--lume-deep)}
 .set-reset{margin-top:12px;width:100%;font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:0.06em;color:var(--coral);background:transparent;border:1px solid rgba(226,96,122,0.4);border-radius:9px;padding:11px;cursor:pointer;transition:background .15s}
 .set-reset:hover{background:rgba(226,96,122,0.08)}
+.syncui{display:flex;flex-direction:column;gap:8px;margin:6px 0}
+.sync-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--steel-dim)}
+.sync-row b{color:var(--brass-bright);font-size:13px;letter-spacing:0.06em}
+.sync-row input{flex:1;min-width:130px;background:rgba(5,12,24,.6);border:1px solid var(--hair2);border-radius:8px;color:var(--foam);font-family:var(--mono);font-size:12px;padding:7px 10px}
+.sync-row input:focus{outline:none;border-color:var(--brass-deep)}
+.sync-row button,.sync-btn{background:linear-gradient(180deg,var(--brass-bright),var(--brass));border:none;border-radius:8px;color:#22190a;font-family:var(--sans);font-weight:700;font-size:11px;padding:7px 14px;cursor:pointer}
+.sync-btn{width:100%}
+.sync-note{font-family:var(--mono);font-size:9.5px;color:var(--steel-mute);line-height:1.4}
 
 /* ===== info modal: motion + dive demo ===== */
 @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
@@ -662,6 +670,7 @@ let stats={dives:0,wins:0,best:0,deepest:0,biggest:0,vaults:0,wagered:0,returned
 let seen=false,motionOff=false;   // first-run flag + user reduced-motion preference
 let username='';                  // chosen display name for the online leaderboard
 let clientId='';                  // anonymous per-device id for private usage metrics (no PII)
+let syncCode='';                  // cross-device sync code (no account)
 let p=0,M=1,Mcrash=Infinity,holding=false,lastT=0,crashed=false,lastLevel=0;
 let q2=0,qc=0,mawActive=false,mawResolved=false;        // The Vault: second-dive jackpot run
 let jpEligible=false;                                   // did this dive's stake qualify for the jackpot?
@@ -1282,7 +1291,7 @@ function renderNameRow(){
   if(username){el.innerHTML='Playing as <b>'+esc(username)+'</b> · <a id="lbchg" style="cursor:pointer;color:var(--brass)">change</a>';
     const c=$('lbchg');if(c)c.onclick=function(){username='';saveState();buildActivity();};}
   else{el.innerHTML='<span style="width:100%;text-align:center;color:var(--steel);margin-bottom:2px">Choose a username to join the leaderboard</span><input id="lbnameinput" maxlength="16" placeholder="Pick a username" aria-label="Username"><button id="lbjoin" type="button">Join</button>';
-    const j=$('lbjoin');if(j)j.onclick=function(){const v=cleanName(($('lbnameinput')||{}).value);if(v.length<2||badName(v)){const h=$('lbhead');if(h)h.textContent=(v.length<2?'Enter at least 2 characters':'Please choose a different name');return;}username=v;saveState();lbSubmit();buildActivity();};}
+    const j=$('lbjoin');if(j)j.onclick=async function(){const v=cleanName(($('lbnameinput')||{}).value);const h=$('lbhead');if(v.length<2||badName(v)){if(h)h.textContent=(v.length<2?'Enter at least 2 characters':'Please choose a different name');return;}if(h)h.textContent='Checking name…';const st=await claimName(v);if(st==='taken'){if(h)h.textContent='That name is taken — pick another';return;}if(st==='blocked'){if(h)h.textContent='Please choose a different name';return;}username=v;saveState();lbSubmit();buildActivity();};}
 }
 
 /* ---------- inputs ---------- */
@@ -1316,16 +1325,38 @@ $('stake').addEventListener('input',updateJpHint);updateJpHint();
 
 /* ---------- persistence (localStorage — fine on a hosted page) ---------- */
 const LS='fathom.save.v1';
-function saveState(){try{localStorage.setItem(LS,JSON.stringify({balance,stats,seen,soundOn,motionOff,name:username,cid:clientId}));}catch(e){}}
-function loadState(){try{const d=JSON.parse(localStorage.getItem(LS)||'null');if(!d)return;
+function saveState(){try{localStorage.setItem(LS,JSON.stringify({balance,stats,seen,soundOn,motionOff,name:username,cid:clientId,sync:syncCode}));}catch(e){}syncPush();}
+function applySave(d){if(!d)return;
   if(typeof d.balance==='number'&&d.balance>=10)balance=d.balance;
   if(d.stats)for(const k in stats){if(typeof d.stats[k]==='number')stats[k]=d.stats[k];}
   if(d.seen)seen=true;
   if(typeof d.name==='string')username=d.name;
   if(typeof d.cid==='string')clientId=d.cid;
+  if(typeof d.sync==='string')syncCode=d.sync;
   if(typeof d.soundOn==='boolean')soundOn=d.soundOn;
   if(typeof d.motionOff==='boolean'){motionOff=d.motionOff;reduce=osReduce||motionOff;}
-}catch(e){}}
+}
+function loadState(){try{applySave(JSON.parse(localStorage.getItem(LS)||'null'));}catch(e){}}
+/* ---------- cross-device sync code (no account) ---------- */
+let _syncT=0;
+function genCode(){return (Math.random().toString(36).slice(2,7)+Math.random().toString(36).slice(2,7)).toUpperCase();}
+function syncPayload(){return {balance:balance,stats:stats,seen:seen,soundOn:soundOn,motionOff:motionOff,name:username};}
+function syncPush(){if(!LB_ON||!syncCode||typeof fetch!=='function')return;clearTimeout(_syncT);_syncT=setTimeout(function(){try{fetch(SB_URL+'/rest/v1/rpc/sync_save',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_code:syncCode,p_data:syncPayload()})});}catch(e){}},1200);}
+function syncCreate(){syncCode=genCode();saveState();renderSync();}
+async function syncLoad(code){code=(code||'').trim();if(!code||!LB_ON||typeof fetch!=='function')return false;
+  try{const r=await fetch(SB_URL+'/rest/v1/rpc/sync_load',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_code:code})});
+    if(!r.ok)return false;const d=await r.json();if(!d)return false;applySave(d);syncCode=code;setBal(balance);saveState();render();return true;}catch(e){return false;}
+}
+function renderSync(){
+  const el=$('syncui');if(!el)return;let h='';
+  if(syncCode){h+='<div class="sync-row">Your code: <b>'+esc(syncCode)+'</b> <button id="syncCopy" type="button">Copy</button></div><div class="sync-note">Enter this on another device to load your progress.</div>';}
+  else{h+='<button id="syncCreate" type="button" class="sync-btn">Create a sync code</button>';}
+  h+='<div class="sync-row"><input id="syncIn" placeholder="Enter a code to restore" maxlength="14" aria-label="Sync code"><button id="syncRestore" type="button">Load</button></div><div class="sync-note" id="syncMsg"></div>';
+  el.innerHTML=h;
+  const cr=$('syncCreate');if(cr)cr.onclick=function(){syncCreate();};
+  const cp=$('syncCopy');if(cp)cp.onclick=function(){try{navigator.clipboard.writeText(syncCode);}catch(e){}const m=$('syncMsg');if(m)m.textContent='Copied.';};
+  const rs=$('syncRestore');if(rs)rs.onclick=async function(){const m=$('syncMsg');if(m)m.textContent='Loading…';const ok=await syncLoad(($('syncIn')||{}).value);if(m)m.textContent=ok?'Progress restored.':'Code not found.';if(ok)renderSync();};
+}
 
 /* ---------- weekly season + seeded rival field ---------- */
 const WEEK_MS=6048e5;
@@ -1357,6 +1388,11 @@ function rdPost(mult,won){
   if(!LB_ON||typeof fetch!=='function'||!username)return;   // only post named dives to the public feed
   try{fetch(SB_URL+'/rest/v1/recent_dives',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({username:username.slice(0,16),mult:Math.round((Number(mult)||1)*100)/100,won:!!won})});}catch(e){}
 }
+/* claim a unique username (first-come, tied to anonymous device id) */
+async function claimName(name){
+  if(!LB_ON||typeof fetch!=='function')return 'ok';   // offline: allow locally
+  try{const r=await fetch(SB_URL+'/rest/v1/rpc/claim_name',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_name:name,p_owner:clientId})});if(!r.ok)return 'ok';const v=await r.json();return v||'ok';}catch(e){return 'ok';}
+}
 /* private usage metrics — anonymous, insert-only (no PII) */
 function track(name,d){
   if(!LB_ON||typeof fetch!=='function')return;d=d||{};
@@ -1373,6 +1409,7 @@ sizeCol();sizeGauge();initFx();renderJackpot();setBal(balance);render();requestA
 newClientSeed();commitServer().then(fairPanel);
 rdFetch();setInterval(rdFetch,25000);
 jpFetch();setInterval(jpFetch,15000);
+if(syncCode)syncLoad(syncCode);
 /* ---------- social layer wiring ---------- */
 (function(){
   const open=()=>{buildActivity();$('activity').classList.add('open');};
@@ -1394,6 +1431,7 @@ jpFetch();setInterval(jpFetch,15000);
   function syncSettings(){
     if(ss){ss.textContent=soundOn?'On':'Off';ss.classList.toggle('off',!soundOn);}
     if(sm){sm.textContent=motionOff?'On':'Off';sm.classList.toggle('off',!motionOff);}
+    renderSync();
   }
   const open=()=>{syncSettings();$('rules').classList.add('open');};
   const close=()=>{$('rules').classList.remove('open');};
@@ -1455,6 +1493,8 @@ document.addEventListener('click',function(e){
     <h3>Settings</h3>
     <div class="set-row"><span>Sound effects</span><button class="set-tgl" id="setSound" type="button">On</button></div>
     <div class="set-row"><span>Reduced motion</span><button class="set-tgl off" id="setMotion" type="button">Off</button></div>
+    <h3>Sync across devices</h3>
+    <div class="syncui" id="syncui"></div>
     <button class="set-reset" id="setReset" type="button">Reset demo progress</button>
     <button class="modal-close" id="rulesclose">Back to the dive</button>
   </div>
