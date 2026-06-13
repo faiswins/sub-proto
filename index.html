@@ -236,10 +236,26 @@ input[type=number]:focus{outline:none}
   background:radial-gradient(circle at 50% 30%,#1d3350,#0e1d33);border:2px solid var(--brass-deep);
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 3px 8px rgba(0,0,0,0.4)}
 .chip:hover{border-color:var(--brass);color:var(--brass-bright);transform:translateY(-1px)}
+/* auto-pilot */
+.autopilot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.auto-toggle{font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--steel-dim);
+  padding:9px 15px;border-radius:50px;border:1px solid var(--hair2);background:rgba(5,12,24,0.55);cursor:pointer;transition:color .15s,background .15s,border-color .15s,box-shadow .15s}
+.auto-toggle::before{content:'○ ';color:var(--steel-mute)}
+.auto-toggle.on{color:#0a1018;background:linear-gradient(180deg,var(--lume-bright),var(--lume-deep));border-color:var(--lume);box-shadow:0 0 14px rgba(191,224,255,0.35)}
+.auto-toggle.on::before{content:'● ';color:#0a1018}
+.auto-target{display:flex;align-items:center;gap:7px;font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--steel-mute);transition:opacity .15s}
+.auto-target.off{opacity:0.38}
+.auto-target input{width:86px;background:rgba(5,12,24,0.6);border:1px solid var(--hair2);border-radius:9px;color:var(--lume-bright);
+  font-family:var(--serif);font-weight:700;font-size:17px;padding:5px 8px;text-align:center}
+.auto-target input:focus{outline:none;border-color:var(--lume-deep)}
+.auto-target .u{font-family:var(--serif);font-weight:700;font-size:14px;color:var(--lume-deep)}
 .msg{font-family:var(--mono);font-size:11px;color:var(--steel-dim);height:3em;min-height:3em;overflow:hidden;line-height:1.5;margin-top:14px}
 .msg b{color:var(--lume);font-weight:500}
 .msg b.lost{color:var(--coral)}
 .msg b.gold{color:var(--brass)}
+.msg.hint{color:var(--lume);animation:hintpulse 1.8s ease-in-out infinite}
+@keyframes hintpulse{0%,100%{opacity:.68}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.msg.hint{animation:none}}
 
 /* lower */
 .lower{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -321,6 +337,10 @@ footer{font-family:var(--sans);font-size:10.5px;color:var(--steel-mute);text-ali
   .stakerow input[type=number]{font-size:27px}
   .chips{gap:7px;margin-bottom:5px}
   .chip{padding:8px 0;font-size:12px;border-width:1.5px}
+  .autopilot{margin-bottom:5px}
+  .auto-toggle{padding:7px 12px;font-size:10px}
+  .auto-target{font-size:9px;gap:5px}
+  .auto-target input{width:66px;font-size:14px;padding:4px 6px}
   .launch{padding:9px;font-size:14px}
 
   .lower{display:none}
@@ -405,6 +425,41 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .lb td.r,.lb th.r{text-align:right}
 .lb tr:last-child td{border-bottom:none}
 .sim-note{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--steel-mute);text-align:center;margin-top:12px}
+.lb-head{font-family:var(--mono);font-size:10px;letter-spacing:0.06em;color:var(--brass);text-align:center;margin:2px 0 8px}
+.lb tr.you td{color:var(--brass-bright);font-weight:700;background:rgba(216,194,142,0.10)}
+.lb-name{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--steel-dim);margin:2px 0 8px}
+.lb-name b{color:var(--foam)}
+.lb-name input{background:rgba(5,12,24,.6);border:1px solid var(--hair2);border-radius:8px;color:var(--foam);font-family:var(--mono);font-size:12px;padding:7px 10px;width:160px}
+.lb-name input:focus{outline:none;border-color:var(--brass-deep)}
+.lb-name button{background:linear-gradient(180deg,var(--brass-bright),var(--brass));border:none;border-radius:8px;color:#22190a;font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:.04em;padding:7px 16px;cursor:pointer}
+
+/* ===== personal records + settings ===== */
+.rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hair);border:1px solid var(--hair);border-radius:9px;overflow:hidden;margin-bottom:6px}
+.rec{display:flex;flex-direction:column;gap:2px;padding:9px 12px;background:var(--panel)}
+.rec .rk{font-family:var(--mono);font-size:8.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--steel-mute)}
+.rec .rv{font-family:var(--serif);font-weight:700;font-size:16px;color:var(--foam)}
+.set-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--hair);font-size:12.5px;color:#c6d2e4}
+.set-tgl{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--lume);background:rgba(5,12,24,0.6);border:1px solid var(--hair2);border-radius:50px;padding:6px 18px;cursor:pointer;transition:color .15s,border-color .15s}
+.set-tgl.off{color:var(--steel-mute)}
+.set-tgl:hover{border-color:var(--lume-deep)}
+.set-reset{margin-top:12px;width:100%;font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:0.06em;color:var(--coral);background:transparent;border:1px solid rgba(226,96,122,0.4);border-radius:9px;padding:11px;cursor:pointer;transition:background .15s}
+.set-reset:hover{background:rgba(226,96,122,0.08)}
+
+/* ===== info modal: motion + dive demo ===== */
+@keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+.modal.open .modal-card{animation:cardIn .34s cubic-bezier(.2,.9,.3,1)}
+@keyframes divePulse{0%,100%{opacity:.5}50%{opacity:1}}
+.rules-demo{position:relative;height:84px;margin:14px 0 8px;border:1px solid var(--hair);border-radius:10px;overflow:hidden;
+  background-image:repeating-linear-gradient(180deg,rgba(200,214,238,.06) 0 1px,transparent 1px 21px),linear-gradient(180deg,#16294C,#0C1832 55%,#04070E)}
+.rules-demo .rd-sub{position:absolute;top:12px;width:17px;height:8px;border-radius:50%;
+  background:linear-gradient(180deg,#EFF5FB,#587390);box-shadow:0 0 9px rgba(191,224,255,.5)}
+.rules-demo .rd-a{left:24%;animation:rdDive 3.8s ease-in-out infinite}
+.rules-demo .rd-b{left:50%;animation:rdDive 3.8s ease-in-out infinite 1.0s}
+.rules-demo .rd-c{left:76%;animation:rdDive 3.8s ease-in-out infinite 2.1s}
+@keyframes rdDive{0%{top:12px;opacity:0}8%{opacity:1}52%{top:54px;opacity:1}66%{top:54px;opacity:1}74%{opacity:0}100%{top:12px;opacity:0}}
+.rules-demo .rd-floor{position:absolute;left:0;right:0;bottom:0;text-align:center;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  color:#FFE39A;padding:4px 0;background:linear-gradient(180deg,transparent,rgba(255,205,110,.16));border-top:1px solid rgba(255,210,120,.45);animation:divePulse 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.modal.open .modal-card{animation:none}.rules-demo .rd-sub{animation:none;top:34px}.rules-demo .rd-floor{animation:none}}
 
 </style>
 </head>
@@ -423,10 +478,6 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
       <div class="eyebrow">Deep-Sea Descent</div>
     </div>
     <div class="hr-right">
-      <div class="trust">
-        <span class="seal">RTP <b>97%</b></span>
-        <span class="seal">Provably fair</span>
-      </div>
       <div class="bal">
         <div class="bl">Balance</div>
         <div><b id="bal">1,000.00</b><span class="u">CR</span></div>
@@ -516,6 +567,10 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
           <button class="chip" data-v="100">100</button>
           <button class="chip" data-v="max">Max</button>
         </div>
+        <div class="autopilot">
+          <button class="auto-toggle" id="autotgl" role="switch" aria-checked="false" type="button">Auto-dive</button>
+          <div class="auto-target off" id="autotarget"><span>surface at</span><input type="number" id="autoat" value="2.00" min="1.01" step="0.25" inputmode="decimal" aria-label="Auto-surface multiplier"><span class="u">×</span></div>
+        </div>
         <div class="jphint" id="jphint"></div>
         <button class="launch" id="launch">Launch dive</button>
         <div class="msg" id="msg">Each descent multiplies your haul as survival odds fall. Surface before a hazard ends the dive.</div>
@@ -532,15 +587,23 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
   </div>
 </div>
 <footer>Concept prototype for evaluation only. Virtual credits with no monetary value. The base dive returns a verifiable 96% per dive (4% edge) and is strategy-independent: no cash-out pattern, Bank Half, or hover timing beats it. A further 1% is skimmed from every qualifying wager into the progressive pool and paid back in full over the long run, network-wide, for a blended 97% return (3% edge) across the whole player base. Stakes under 50 CR play the pure 96% base game and neither contribute to nor win the jackpot. The decision clock surfaces and banks your haul on timeout — it never advances you into further risk. Not a deployable real-money product: live play requires server-authoritative outcomes, independent certification, and licensing.</footer>
-  <div class="statusbar"><span>RTP <b>96%</b> + 1% ◆</span><span>Volatility <b>Med–High</b></span><span>Max win <b>100× + ◆</b></span><span><b>18+</b> · Free demo · virtual credits · no real-money play</span><span>v<b>1.0.0</b></span></div>
+  <div class="statusbar"><span><b>18+</b> · Free demo · virtual credits · no real-money play</span><span>v<b>1.0.0</b></span></div>
 
 
 <script>
 (function(){
 "use strict";
+/* diagnostic: surface any uncaught error on-screen instead of failing into a blank canvas */
+window.addEventListener('error',function(ev){try{var e=document.getElementById('__err');if(!e){e=document.createElement('div');e.id='__err';e.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#7a1020;color:#fff;font:12px/1.4 ui-monospace,monospace;padding:8px 10px;white-space:pre-wrap';(document.body||document.documentElement).appendChild(e);}e.textContent='JS ERROR: '+(ev.message||(ev.error&&ev.error.message)||ev.error)+'  @'+String(ev.filename||'').split('/').pop()+':'+ev.lineno+':'+ev.colno;}catch(_){}},true);
 const $=id=>document.getElementById(id);
+/* ====== LEADERBOARD BACKEND (Supabase) ======
+   Fill these in after creating a free Supabase project (see FATHOM-leaderboard-setup.md).
+   Leave blank to use the offline simulated leaderboard. */
+const SB_URL='https://hpmraewdlhgotovvnkia.supabase.co';   // Supabase project URL
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwbXJhZXdkbGhnb3RvdnZua2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzM1MzYsImV4cCI6MjA5Njk0OTUzNn0.F1Ib80WuNpPtYOrHdd0CpWc8m38Qi_dXhMejieJHqBA';   // anon (public) key — safe to expose
+const LB_ON=!!(SB_URL&&SB_KEY);
 const fmt=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;const osReduce=reduce;
 const mobile=window.matchMedia('(max-width:480px)').matches;
 
 /* ---------- sound ---------- */
@@ -576,7 +639,8 @@ const sfx={
   tick:()=>tone(1500,1500,0.035,'sine',0.04),
   ticklast:()=>tone(1950,1950,0.08,'sine',0.06),
 };
-$('snd').onclick=()=>{soundOn=!soundOn;$('snd').textContent=soundOn?'♪':'∅';$('snd').classList.toggle('off',!soundOn);if(soundOn)sfx.click();};
+function hap(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}}  // haptics: Android web supports it; iOS Safari ignores
+$('snd').onclick=()=>{soundOn=!soundOn;$('snd').textContent=soundOn?'♪':'∅';$('snd').classList.toggle('off',!soundOn);if(soundOn)sfx.click();saveState();};
 
 /* ---------- model ---------- */
 const RTP=0.96;       // base-game return: EXACT per-dive, strategy-independent. +1% CONSERVED progressive (long-run, network-wide) = 97% blended, 3% edge.
@@ -593,6 +657,7 @@ const ZONES=[       // visual depth markers along the continuous descent
   {name:'Bathyal'},{name:'Abyssal'},{name:'Hadal'},{name:'The Trench'},{name:'The Sounding'},
 ];
 const N=ZONES.length;                          // 9 named markers
+const FLAVORS=['sunlit shallows','the shelf drops away','light thins to blue','the last light fades','cold open water','pressure mounts','into the crushing deep','nearing the trench','the final ledge'];
 const LV=N+1;                                  // total levels including the floor
 const markerM=k=>Math.pow(M_FLOOR,Math.pow(k/LV,GAMMA)); // multiplier at evenly-spaced level k (0..LV)
 const TIERS=[[40,'Sounding Survivor'],[14,'Trench Runner'],[5,'Abyss Diver'],[2,'Deep Hand']];
@@ -600,6 +665,11 @@ const DECIDE_MS=8000; // hover auto-surface timeout
 
 /* ---------- state ---------- */
 let balance=1000,state='idle',stake=0,work=0,banked=0;
+let auto=false,autoTarget=2;   // auto-pilot: hands-free dive that surfaces (banks) at a target multiplier
+let stats={dives:0,wins:0,best:0,deepest:0,biggest:0,vaults:0,wagered:0,returned:0,seasonBest:0,seasonId:0};
+let seen=false,motionOff=false;   // first-run flag + user reduced-motion preference
+let username='';                  // chosen display name for the online leaderboard
+let clientId='';                  // anonymous per-device id for private usage metrics (no PII)
 let p=0,M=1,Mcrash=Infinity,holding=false,lastT=0,crashed=false,lastLevel=0;
 let q2=0,qc=0,mawActive=false,mawResolved=false;        // The Vault: second-dive jackpot run
 let jpEligible=false;                                   // did this dive's stake qualify for the jackpot?
@@ -607,12 +677,13 @@ let serverSeed='',serverHash='',clientSeed='',nonce=0,lastReveal='',uRoll=0,jRol
 
 /* ---------- progressive jackpot ---------- */
 const JP_RATE=0.01, JP_LIVE=0.0085, JP_RESV=0.0015; // total skim from a QUALIFYING wager, split live/reserve
-const JP_SEED0=9000;         // ONE-TIME launch seed (genesis only). Amortizes toward zero over volume, so the 3% edge holds at EVERY stake. Never re-injected on a win.
+const JP_SEED0=42000;        // demo headline seed (cosmetic). For a real-money build this is a one-time genesis seed that amortizes toward zero.
+const JP_RESEED=38000;       // demo-only: after a win the pool reseeds into a headline band (a real build resets to the accrued reserve only)
 let pool=JP_SEED0, reserve=0; // conserved: after the launch seed, only qualifying wagers feed the pool; on a win it resets to the accrued reserve only.
 let jackpot=pool;             // displayed value mirrors the live winnable pool
 function renderJackpot(){jackpot=pool;const e=$('jpval');if(e)e.textContent=fmt(jackpot);}
 function jpContribute(amt){pool+=amt*JP_LIVE;reserve+=amt*JP_RESV;renderJackpot();}
-function awardJackpot(){const payout=pool;pool=reserve;reserve=0;renderJackpot();return payout;} // conserved reset to accrued reserve ONLY: no recurring subsidy, 3% holds at every stake
+function awardJackpot(){const payout=pool;pool=JP_RESEED+Math.random()*4000;reserve=0;renderJackpot();return payout;} // DEMO: reseed to a headline band so the pool stays lively (a real build resets to accrued reserve only)
 
 /* ---------- seed ---------- */
 function randHex(n){const a=new Uint8Array(n);crypto.getRandomValues(a);return [...a].map(b=>b.toString(16).padStart(2,'0')).join('');}
@@ -646,7 +717,7 @@ async function genDive(){
 }
 
 /* ---------- balance ---------- */
-function setBal(v,dir){balance=v;$('bal').textContent=fmt(v);const b=$('bal');b.className='';if(dir){b.classList.add(dir);setTimeout(()=>b.className='',700);}}
+function setBal(v,dir){balance=v;$('bal').textContent=fmt(v);const b=$('bal');b.className='';if(dir){b.classList.add(dir);setTimeout(()=>b.className='',700);}saveState();}
 
 /* ---------- shot clock (auto-surfaces on timeout, never auto-descends) ---------- */
 let clockIv=null,deadline=0,lastSec=0;
@@ -738,7 +809,9 @@ async function launch(){
   const amt=Math.floor(Number($('stake').value));
   if(!amt||amt<1){$('msg').textContent='Enter a stake of at least 1 credit.';return;}
   if(amt>balance){$('msg').textContent='Stake exceeds your balance.';return;}
-  sfx.click();setBal(balance-amt);
+  sfx.click();setBal(balance-amt);stats.dives++;stats.wagered+=amt;track('launch',{stake:amt});
+  if(!seen){seen=true;const mh=$('msg');if(mh)mh.classList.remove('hint');}
+  saveState();
   stake=amt;work=amt;p=0;M=1;banked=0;crashed=false;holding=false;lastLevel=0;
   jpEligible=amt>=JP_MIN_BET;
   if(jpEligible)jpContribute(amt);   // skim ONLY from qualifying stakes; sub-50 dives are pure 96% base game
@@ -748,14 +821,18 @@ async function launch(){
   q2=0;mawActive=false;mawResolved=false;clearTimeout(mawTimer);
   fairPanel();
   $('msg2').innerHTML='Dive sealed. <b>Hold Descend</b> to dive — release to hover, surface to bank.';
-  subY=yForP(0);liveUpdate();render();timerStart();
+  subY=yForP(0);liveUpdate();render();
+  if(auto){                                  // hands-free: dive automatically, bank at the target
+    holding=true;$('descend').disabled=true;$('descend').textContent='Auto-diving ▾';$('surface').disabled=false;
+    $('msg2').innerHTML='<b>Auto-dive engaged</b> — surfacing automatically at <b>'+autoTarget.toFixed(2)+'×</b>. Tap Surface to take it early.';
+  }else timerStart();
 }
 function holdStart(e){
   const canDive=(state==='diving'&&!crashed&&p<1);
   const canMaw=(state==='maw'&&mawActive&&!mawResolved);
   if(!canDive&&!canMaw)return;
   if(e&&e.preventDefault)e.preventDefault();
-  holding=true;timerStop();sfx.descend&&sfx.descend();
+  holding=true;timerStop();sfx.descend&&sfx.descend();hap(8);
   $('msg2').innerHTML=canMaw?'Plunging into <b class="gold">The Vault</b>… hold for the jackpot floor.':'Descending… release to lock in your haul.';
 }
 function holdEnd(){
@@ -785,7 +862,7 @@ function reachFloor(){
   if(state!=='diving')return;
   holding=false;timerStop();p=1;M=M_FLOOR;
   const floorPay=work*M;setBal(balance+floorPay,'up');banked+=floorPay;work=0;  // 100× banked & safe
-  subY=cv.height*0.17;burst(30);sfx.bigwin&&sfx.bigwin();
+  subY=cv.height*0.17;burst(30);sfx.bigwin&&sfx.bigwin();hap(30);
   $('haul').textContent=fmt(banked);$('haul').className='haul win';
   if(jpEligible){
     state='maw';q2=0;mawActive=false;mawResolved=false;
@@ -823,7 +900,7 @@ function mawCrash(){
   setTimeout(()=>resolveMaw(false),800);
 }
 function resolveMaw(won){
-  const jp=won?awardJackpot():0;
+  const jp=won?awardJackpot():0;if(won){stats.vaults++;hap([12,28,12,28,55]);track('jackpot',{total:banked+jp});}
   if(jp)setBal(balance+jp,'up');
   const total=banked+jp;state='done';$('haul').className='haul win';
   $('descend').textContent='Hold to dive ▼';
@@ -836,7 +913,7 @@ function resolveMaw(won){
 }
 function bankHalf(){
   if(state!=='diving')return;
-  const h=work*M,take=h/2;setBal(balance+take,'up');banked+=take;work=work/2;sfx.bank();
+  const h=work*M,take=h/2;setBal(balance+take,'up');banked+=take;work=work/2;sfx.bank();hap(12);
   $('msg2').innerHTML='Banked <b>'+fmt(take)+'</b> CR. <b class="gold">'+fmt(work*M)+'</b> still at risk.';
   liveUpdate();render();
 }
@@ -845,30 +922,39 @@ function surface(auto){
   timerStop();holding=false;
   const h=work*M;setBal(balance+h,'up');burst(20);
   const total=banked+h;state='done';$('haul').className='haul win';
-  (M>=5?sfx.bigwin:sfx.win)();celebrate(M,total,0);
+  (M>=5?sfx.bigwin:sfx.win)();hap(M>=5?[14,30,20]:16);celebrate(M,total,0);
   $('msg2').innerHTML=(auto?'<b>Hover expired</b> — surfaced automatically. ':'')+'Surfaced at <b>'+M.toFixed(2)+'×</b> — collected <b>'+fmt(total)+'</b> CR.';
   finish(true,total);
 }
 function bust(){
-  timerStop();state='done';crashed=true;holding=false;sfx.breach();
+  timerStop();state='done';crashed=true;holding=false;sfx.breach();hap([25,50,30]);
   $('haul').textContent=fmt(work*M);$('haul').className='haul lost';
   $('msg2').innerHTML='Hull breach at <b class="lost">'+M.toFixed(2)+'×</b>. At-risk haul lost'+(banked>0?', <b>'+fmt(banked)+'</b> CR kept from banking.':'.');
   finish(false,banked);
 }
 function finish(win,total){
   timerStop();
+  if(win)stats.wins++;
+  if(win&&M>stats.best)stats.best=M;
+  if(p>stats.deepest)stats.deepest=p;
+  if(total>stats.biggest)stats.biggest=total;
+  if(total>stats.seasonBest)stats.seasonBest=total;
+  stats.returned+=total;saveState();lbSubmit();track('end',{mult:M,total:total});
   fairPanel();
   log.unshift({m:M,zone:zoneNameAt(p),win,total});log=log.slice(0,8);
   $('log').innerHTML=log.map(e=>(
     '<div class="logline '+(e.win?'win':'loss')+'"><span><span class="d">'+(e.win?'▲':'✕')+' '+e.m.toFixed(2)+'×</span> <span class="z">'+e.zone+'</span></span>'+
     '<span class="amt">'+(e.win?'+':'')+fmt(e.total)+'</span></div>')).join('');
   render();
-  setTimeout(()=>{state='idle';p=0;M=1;$('msg').textContent=win?'Dive logged. Set your next stake.':'The trench keeps what it takes. Dive again when ready.';render();fairPanel();},2600);
+  setTimeout(()=>{state='idle';p=0;M=1;
+    if(balance<10){balance=1000;setBal(1000);$('msg').textContent='Demo credits refilled to 1,000.';}
+    else $('msg').textContent=win?'Dive logged. Set your next stake.':'The trench keeps what it takes. Dive again when ready.';
+    render();fairPanel();},2600);
 }
 
 /* ---------- sounding profile (living deep-sea scene) ---------- */
 const cv=$('col'),cx=cv.getContext('2d');
-let subY=0,subVel=0;
+let subY=0,subVel=0,zoneFlash=null;
 let rays=[],creatures=[],ripples=[],brass=[],divers=[];
 function sizeCol(){const r=cv.parentElement.getBoundingClientRect();const w=Math.round(r.width*devicePixelRatio),h=Math.round(r.height*devicePixelRatio);if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}}
 window.addEventListener('resize',()=>{sizeCol();sizeGauge();});
@@ -978,7 +1064,8 @@ function drawCol(t){
     p+=dt/DIVE_MS;
     const pc=Math.min(p,1);
     M=Math.pow(M_FLOOR,Math.pow(pc,GAMMA));
-    if(M>=Mcrash){M=Mcrash;bust();}
+    if(M>=Mcrash){M=Mcrash;bust();}                         // crash always takes priority (the house edge)
+    else if(auto&&M>=autoTarget){M=autoTarget;surface(false);} // auto-pilot banks at the target
     else if(p>=1){M=M_FLOOR;reachFloor();}
     else liveUpdate();
   }
@@ -1050,12 +1137,20 @@ function drawCol(t){
   for(const p of brass){p.y+=p.vy;p.a*=0.987;p.tw+=0.3;const tw=0.6+0.4*Math.sin(p.tw);
     if(!reduce){cx.shadowColor='rgba(255,210,120,0.7)';cx.shadowBlur=6*dpr;}
     cx.fillStyle='rgba(255,222,150,'+(p.a*tw).toFixed(3)+')';cx.beginPath();cx.arc(p.x*W,p.y*H,p.r*dpr,0,6.3);cx.fill();cx.shadowBlur=0;}
+  // zone-entry flash — names each level of the descent as you pass it
+  if(zoneFlash){zoneFlash.a-=0.012;if(zoneFlash.a<=0)zoneFlash=null;else{
+    cx.save();cx.globalAlpha=Math.min(1,zoneFlash.a);cx.textAlign='center';cx.textBaseline='alphabetic';
+    if(!reduce){cx.shadowColor='rgba(8,14,32,0.85)';cx.shadowBlur=8*dpr;}
+    cx.fillStyle='rgba(242,246,252,0.97)';cx.font='700 '+(15*dpr)+'px Manrope';
+    cx.fillText(zoneFlash.name,W*0.5,H*0.30);
+    cx.fillStyle='rgba(159,208,240,0.85)';cx.font='600 '+(9*dpr)+'px Manrope';
+    cx.fillText(zoneFlash.flavor.toUpperCase(),W*0.5,H*0.30+14*dpr);cx.shadowBlur=0;cx.restore();}}
   // submersible
   if(state!=='idle'){
     const tgt=(state==='maw')?cv.height*0.97:yForP(p);
     if(reduce){subY=tgt;subVel=0;}else{subVel+=(tgt-subY)*0.10;subVel*=0.82;subY+=subVel;}
     const curLv=Math.floor(p*LV);
-    if(curLv!==lastLevel){if(curLv>lastLevel){ripples.push({y:yForP(curLv/LV),rad:6*dpr,a:0.6});const gm=$('gmult');if(gm&&!reduce){gm.classList.remove('pop');void gm.offsetWidth;gm.classList.add('pop');}}lastLevel=curLv;}
+    if(curLv!==lastLevel){if(curLv>lastLevel){ripples.push({y:yForP(curLv/LV),rad:6*dpr,a:0.6});const gm=$('gmult');if(gm&&!reduce){gm.classList.remove('pop');void gm.offsetWidth;gm.classList.add('pop');}if(curLv>=1&&curLv<=N)zoneFlash={name:ZONES[curLv-1].name,flavor:FLAVORS[curLv-1]||'',a:1};}lastLevel=curLv;}
     const breach=(state==='done'&&log[0]&&!log[0].win);
     cx.strokeStyle='rgba(200,214,238,0.10)';cx.lineWidth=1;cx.setLineDash([2*dpr,4*dpr]);cx.beginPath();cx.moveTo(34*dpr,subY);cx.lineTo(W-12*dpr,subY);cx.stroke();cx.setLineDash([]);
     if(!reduce&&Math.abs(subVel)>1.2*dpr){for(let i=0;i<3;i++){const sx=W*0.5+(Math.random()-0.5)*30*dpr;cx.strokeStyle='rgba(191,224,255,0.10)';cx.lineWidth=1*dpr;cx.beginPath();cx.moveTo(sx,subY-14*dpr);cx.lineTo(sx,subY-26*dpr);cx.stroke();}
@@ -1107,7 +1202,7 @@ function drawGauge(t){
 const NAMES=['Nereid','Pelagic','Sonar 7','Meridian','Cousteau','Triton','Vantablack','Ballast','Kraken','Silt','Blue Hole','Marianas','Abyssal','Drift','Sounding','Benthic','Lumen','Brine','Current','Hadean','Fathomer','Deepcell'];
 function entry(){
   const n=NAMES[(Math.random()*NAMES.length)|0], r=Math.random();
-  if(r<0.045){const amt=9000+Math.random()*2500;
+  if(r<0.045){const amt=38000+Math.random()*22000;
     return '<span class="entry vault"><span class="who">'+n+'</span> · ◆ <b>cracked The Vault +'+fmt(amt)+'</b></span>';}
   if(r<0.64){const mx=1.2+Math.random()*Math.random()*22, amt=mx*[10,25,50,100][(Math.random()*4)|0];
     return '<span class="entry ok"><span class="who">'+n+'</span> · '+mx.toFixed(2)+'× · <b>+'+fmt(amt)+'</b></span>';}
@@ -1118,13 +1213,13 @@ function entry(){
 function spawnDiver(){const left=Math.random()<0.5;
   return {x:left?0.15+Math.random()*0.23:0.62+Math.random()*0.23, p:0, vp:0.00016+Math.random()*0.00034,
     target:0.16+Math.random()*Math.random()*0.82, name:NAMES[(Math.random()*NAMES.length)|0], st:'dive', fade:1};}
-function initDivers(){divers=[];for(let i=0;i<3;i++){const d=spawnDiver();d.p=Math.random()*0.5;divers.push(d);}}
+function initDivers(){divers=[];for(let i=0;i<6;i++){const d=spawnDiver();d.p=Math.random()*0.8;divers.push(d);}}
 function drawDivers(t,W,H,dpr){
   for(let i=0;i<divers.length;i++){let d=divers[i];
     if(d.st==='dive'){if(!reduce)d.p+=d.vp; if(d.p>=d.target){d.st=Math.random()<0.8?'surf':'breach';}}
     else{d.fade-=0.016; if(d.fade<=0){divers[i]=spawnDiver();continue;}}
     const pp=Math.min(d.p,1), py=yForP(pp), px=d.x*W, mult=Math.pow(M_FLOOR,Math.pow(pp,GAMMA));
-    const a=(d.st==='dive'?0.5:d.fade*0.6), col=d.st==='breach'?'rgba(226,96,122,':'rgba(150,195,245,';
+    const a=(d.st==='dive'?0.62:d.fade*0.66), col=d.st==='breach'?'rgba(226,96,122,':'rgba(150,195,245,';
     cx.save();cx.globalAlpha=a;
     if(!reduce){cx.shadowColor=col+'0.5)';cx.shadowBlur=5*dpr;}
     cx.fillStyle=col+'0.5)';cx.beginPath();cx.ellipse(px,py,4.4*dpr,8.4*dpr,0,0,6.3);cx.fill();cx.shadowBlur=0;
@@ -1140,20 +1235,55 @@ function drawDivers(t,W,H,dpr){
 function buildTicker(){let s='';for(let i=0;i<16;i++)s+=entry();$('ticker').innerHTML=s+s;}
 /* global Vault-cracked toast + activity panel (locally simulated network) */
 function showVaultToast(){const el=$('vtoast');if(!el)return;
-  const n=NAMES[(Math.random()*NAMES.length)|0], amt=9000+Math.random()*2500;
+  const n=NAMES[(Math.random()*NAMES.length)|0], amt=38000+Math.random()*22000;
   el.innerHTML='<span class="vt-dot">◆</span> <span>'+n+' cracked <b>The Vault</b> · +'+fmt(amt)+' CR</span>';
   el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),4200);}
 function buildActivity(){
+  {const rg=$('recgrid');if(rg){const wr=stats.dives?Math.round(stats.wins/stats.dives*100):0,net=stats.returned-stats.wagered;
+    rg.innerHTML=[['Dives',stats.dives],['Win rate',wr+'%'],['Best multiple',(stats.best||0).toFixed(2)+'×'],['Deepest',Math.round((stats.deepest||0)*100)+'%'],['Biggest haul',fmt(stats.biggest||0)],['◆ Vaults',stats.vaults],['Wagered',fmt(stats.wagered||0)],['Net',(net>=0?'+':'')+fmt(net)]]
+      .map(r=>'<div class="rec"><span class="rk">'+r[0]+'</span><span class="rv">'+r[1]+'</span></div>').join('');}}
   let lg='';for(let i=0;i<14;i++){const n=NAMES[(Math.random()*NAMES.length)|0],r=Math.random();
-    if(r<0.06){const amt=9000+Math.random()*2500;lg+='<div class="act-row"><span class="who">'+n+'</span><span class="amt vault">◆ Vault +'+fmt(amt)+'</span></div>';}
+    if(r<0.06){const amt=38000+Math.random()*22000;lg+='<div class="act-row"><span class="who">'+n+'</span><span class="amt vault">◆ Vault +'+fmt(amt)+'</span></div>';}
     else if(r<0.64){const mx=1.2+Math.random()*Math.random()*22,amt=mx*[10,25,50,100][(Math.random()*4)|0];lg+='<div class="act-row"><span class="who">'+n+'</span><span class="amt ok">'+mx.toFixed(2)+'× · +'+fmt(amt)+'</span></div>';}
     else{const mx=1.1+Math.random()*Math.random()*30;lg+='<div class="act-row"><span class="who">'+n+'</span><span class="amt ko">breached '+mx.toFixed(2)+'×</span></div>';}}
   const al=$('actlog');if(al)al.innerHTML=lg;
-  const rows=[];for(let i=0;i<6;i++){const n=NAMES[(Math.random()*NAMES.length)|0],best=2+Math.random()*Math.random()*96,haul=best*[25,50,100,100,200][(Math.random()*5)|0];rows.push({n,best,haul});}
-  rows.sort((a,b)=>b.haul-a.haul);
-  let lb='<tr><th>Diver</th><th class="r">Best</th><th class="r">Haul</th></tr>';
-  rows.forEach(r=>{lb+='<tr><td>'+r.n+'</td><td class="r">'+r.best.toFixed(2)+'×</td><td class="r">+'+fmt(r.haul)+'</td></tr>';});
-  const lbb=$('lbbody');if(lbb)lbb.innerHTML=lb;
+  checkSeason();
+  if(LB_ON)buildRealLB();else buildSimLB();
+}
+function lbRowsHTML(arr){let lb='<tr><th>#</th><th>Diver</th><th class="r">Best haul</th></tr>';
+  arr.forEach((r,i)=>{lb+='<tr'+(r.you?' class="you"':'')+'><td>'+(i+1)+'</td><td>'+esc(r.n)+'</td><td class="r">'+(r.haul>0?'+'+fmt(r.haul):'—')+'</td></tr>';});return lb;}
+function seasonHdr(extra){const ms=seasonEndsIn(),dd=Math.floor(ms/864e5),hh=Math.floor(ms%864e5/36e5);return 'Resets in '+dd+'d '+hh+'h'+(extra||'');}
+function buildSimLB(){
+  const rnd=rngFrom(stats.seasonId*7919+101),used={},rivals=[];
+  while(rivals.length<9){const nm=NAMES[(rnd()*NAMES.length)|0];if(used[nm])continue;used[nm]=1;
+    rivals.push({n:nm,haul:400+Math.pow(rnd(),2.2)*42000,you:false});}
+  rivals.push({n:username||'You',haul:stats.seasonBest||0,you:true});
+  rivals.sort((a,b)=>b.haul-a.haul);
+  const rank=rivals.findIndex(r=>r.you)+1;
+  const hd=$('lbhead');if(hd)hd.textContent=seasonHdr(' · you’re #'+rank+' of '+rivals.length);
+  const lbb=$('lbbody');if(lbb)lbb.innerHTML=lbRowsHTML(rivals);
+  renderNameRow();
+}
+function buildRealLB(){
+  renderNameRow();
+  const hd=$('lbhead');if(hd)hd.textContent='Loading live rankings…';
+  const lbb=$('lbbody');if(lbb)lbb.innerHTML='';
+  lbFetch().then(function(rows){
+    if(!rows){if(hd)hd.textContent='Live board unavailable — showing your local best';buildSimLB();renderNameRow();return;}
+    const myRank=rows.findIndex(r=>r.username===username)+1;
+    if(hd)hd.textContent=seasonHdr(username?(myRank?' · you’re #'+myRank:' · post a score to rank'):'');
+    let lb='<tr><th>#</th><th>Diver</th><th class="r">Best haul</th></tr>';
+    if(!rows.length)lb+='<tr><td colspan="3" style="text-align:center;color:var(--steel-mute);padding:10px">Be the first to post a score</td></tr>';
+    rows.forEach(function(r,i){const you=r.username===username;lb+='<tr'+(you?' class="you"':'')+'><td>'+(i+1)+'</td><td>'+esc(r.username)+'</td><td class="r">+'+fmt(Number(r.best_haul)||0)+'</td></tr>';});
+    if(lbb)lbb.innerHTML=lb;
+  });
+}
+function renderNameRow(){
+  const el=$('lbname');if(!el)return;
+  if(username){el.innerHTML='Playing as <b>'+esc(username)+'</b> · <a id="lbchg" style="cursor:pointer;color:var(--brass)">change</a>';
+    const c=$('lbchg');if(c)c.onclick=function(){username='';saveState();buildActivity();};}
+  else{el.innerHTML='<input id="lbnameinput" maxlength="16" placeholder="Pick a username" aria-label="Username"><button id="lbjoin" type="button">Join</button>';
+    const j=$('lbjoin');if(j)j.onclick=function(){const v=cleanName(($('lbnameinput')||{}).value);if(v.length<2)return;username=v;saveState();lbSubmit();buildActivity();};}
 }
 
 /* ---------- inputs ---------- */
@@ -1176,9 +1306,59 @@ function updateJpHint(){
 }
 document.querySelectorAll('.chip').forEach(c=>{c.onclick=()=>{sfx.click();$('stake').value=c.dataset.v==='max'?Math.floor(balance):c.dataset.v;updateJpHint();};});
 $('stake').addEventListener('input',updateJpHint);updateJpHint();
+/* auto-pilot controls */
+(function(){
+  const tgl=$('autotgl'),at=$('autoat'),wrap=$('autotarget');
+  function syncAuto(){if(tgl){tgl.classList.toggle('on',auto);tgl.setAttribute('aria-checked',auto?'true':'false');}if(wrap)wrap.classList.toggle('off',!auto);}
+  if(tgl)tgl.onclick=()=>{if(state!=='idle')return;auto=!auto;sfx.click();syncAuto();};
+  if(at)at.addEventListener('input',()=>{const v=Number(at.value);autoTarget=(isFinite(v)&&v>1.01)?v:1.01;});
+  syncAuto();
+})();
+
+/* ---------- persistence (localStorage — fine on a hosted page) ---------- */
+const LS='fathom.save.v1';
+function saveState(){try{localStorage.setItem(LS,JSON.stringify({balance,stats,seen,soundOn,motionOff,name:username,cid:clientId}));}catch(e){}}
+function loadState(){try{const d=JSON.parse(localStorage.getItem(LS)||'null');if(!d)return;
+  if(typeof d.balance==='number'&&d.balance>=10)balance=d.balance;
+  if(d.stats)for(const k in stats){if(typeof d.stats[k]==='number')stats[k]=d.stats[k];}
+  if(d.seen)seen=true;
+  if(typeof d.name==='string')username=d.name;
+  if(typeof d.cid==='string')clientId=d.cid;
+  if(typeof d.soundOn==='boolean')soundOn=d.soundOn;
+  if(typeof d.motionOff==='boolean'){motionOff=d.motionOff;reduce=osReduce||motionOff;}
+}catch(e){}}
+
+/* ---------- weekly season + seeded rival field ---------- */
+const WEEK_MS=6048e5;
+function seasonNow(){return Math.floor(Date.now()/WEEK_MS);}
+function seasonEndsIn(){return (seasonNow()+1)*WEEK_MS-Date.now();}
+function checkSeason(){const s=seasonNow();if(stats.seasonId!==s){stats.seasonId=s;stats.seasonBest=0;saveState();}}
+function rngFrom(seed){return function(){seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---------- online leaderboard (Supabase REST) ---------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function cleanName(s){return (s||'').replace(/[^A-Za-z0-9 _-]/g,'').trim().slice(0,16);}
+async function lbSubmit(){
+  if(!LB_ON||!username||!(stats.seasonBest>0)||typeof fetch!=='function')return;
+  try{await fetch(SB_URL+'/rest/v1/rpc/submit_score',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_name:username,p_haul:Math.round((stats.seasonBest||0)*100)/100,p_season:seasonNow()})});}catch(e){}
+}
+async function lbFetch(){
+  if(!LB_ON||typeof fetch!=='function')return null;
+  try{const r=await fetch(SB_URL+'/rest/v1/leaderboard?season=eq.'+seasonNow()+'&order=best_haul.desc&limit=20&select=username,best_haul',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});if(!r.ok)return null;return await r.json();}catch(e){return null;}
+}
+/* private usage metrics — anonymous, insert-only (no PII) */
+function track(name,d){
+  if(!LB_ON||typeof fetch!=='function')return;d=d||{};
+  try{fetch(SB_URL+'/rest/v1/events',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({client:clientId,name:name,stake:(d.stake==null?null:d.stake),mult:(d.mult==null?null:d.mult),total:(d.total==null?null:d.total)})});}catch(e){}
+}
 
 /* ---------- boot ---------- */
-sizeCol();sizeGauge();initFx();buildTicker();renderJackpot();render();requestAnimationFrame(drawCol);requestAnimationFrame(drawGauge);
+loadState();checkSeason();
+if(!clientId){clientId='c'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);saveState();}
+track('session');
+$('snd').textContent=soundOn?'♪':'∅';$('snd').classList.toggle('off',!soundOn);
+if(!seen){const mh=$('msg');if(mh){mh.innerHTML='New here? <b>Hold the dive button</b> to descend — release any time to bank your haul.';mh.classList.add('hint');}}
+sizeCol();sizeGauge();initFx();buildTicker();renderJackpot();setBal(balance);render();requestAnimationFrame(drawCol);requestAnimationFrame(drawGauge);
 newClientSeed();commitServer().then(fairPanel);
 /* ---------- social layer wiring ---------- */
 (function(){
@@ -1189,20 +1369,29 @@ newClientSeed();commitServer().then(fairPanel);
   const m=$('activity');if(m)m.addEventListener('click',e=>{if(e.target===m)close();});
   addEventListener('keydown',e=>{if(e.key==='Escape')close();});
   (function ping(){setTimeout(()=>{showVaultToast();ping();},22000+Math.random()*24000);})();
+  setInterval(()=>{if(pool<90000){pool+=3+Math.random()*15;renderJackpot();}},2200); // simulated network contributions (demo only)
 })();
 
-/* splash + rules wiring */
+/* splash + rules + settings wiring */
 (function(){
   const hide=()=>{const s=$('splash');if(s)s.classList.add('gone');};
   if(document.readyState==='complete')setTimeout(hide,650);
   else addEventListener('load',()=>setTimeout(hide,650));
   setTimeout(hide,2600); // never trap the player
-  const open=()=>{$('rules').classList.add('open');};
+  const ss=$('setSound'),sm=$('setMotion'),sr=$('setReset');
+  function syncSettings(){
+    if(ss){ss.textContent=soundOn?'On':'Off';ss.classList.toggle('off',!soundOn);}
+    if(sm){sm.textContent=motionOff?'On':'Off';sm.classList.toggle('off',!motionOff);}
+  }
+  const open=()=>{syncSettings();$('rules').classList.add('open');};
   const close=()=>{$('rules').classList.remove('open');};
   const ib=$('info');if(ib)ib.onclick=open;
   const rc=$('rulesclose');if(rc)rc.onclick=close;
   const md=$('rules');if(md)md.addEventListener('click',e=>{if(e.target===md)close();});
   addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+  if(ss)ss.onclick=()=>{soundOn=!soundOn;$('snd').textContent=soundOn?'♪':'∅';$('snd').classList.toggle('off',!soundOn);if(soundOn)sfx.click();syncSettings();saveState();};
+  if(sm)sm.onclick=()=>{motionOff=!motionOff;reduce=osReduce||motionOff;syncSettings();saveState();};
+  if(sr)sr.onclick=()=>{try{localStorage.removeItem(LS);}catch(e){}balance=1000;stats={dives:0,wins:0,best:0,deepest:0,biggest:0,vaults:0,wagered:0,returned:0,seasonBest:0,seasonId:0};username='';setBal(1000);buildActivity();close();$('msg').textContent='Progress reset — 1,000 demo credits.';};
 })();
 
 })();
@@ -1219,11 +1408,15 @@ document.addEventListener('click',function(e){
   <div class="modal-card">
     <h2>Surface <b>activity</b></h2>
     <div class="mv">Live soundings across the fleet</div>
+    <h3>Your dive record</h3>
+    <div class="rec-grid" id="recgrid"></div>
     <h3>Recent dives</h3>
     <div class="act-log" id="actlog"></div>
-    <h3>Today\'s leaderboard</h3>
+    <h3>Season leaderboard</h3>
+    <div class="lb-name" id="lbname"></div>
+    <div class="lb-head" id="lbhead"></div>
     <table class="lb" id="lb"><tbody id="lbbody"></tbody></table>
-    <div class="sim-note">◆ Simulated network activity · demo</div>
+    <div class="sim-note">◆ Simulated rival field · your rank &amp; best haul are real and persist all season</div>
     <button class="modal-close" id="actclose">Back to the dive</button>
   </div>
 </div>
@@ -1231,9 +1424,11 @@ document.addEventListener('click',function(e){
   <div class="modal-card">
     <h2>How to play <b>FATHOM</b></h2>
     <div class="mv">v1.0.0 · RTP 96% + 1% ◆ jackpot · Provably fair · Free demo — virtual credits, no real-money play</div>
+    <div class="rules-demo" aria-hidden="true"><span class="rd-sub rd-a"></span><span class="rd-sub rd-b"></span><span class="rd-sub rd-c"></span><span class="rd-floor">◆ THE VAULT · 100× FLOOR</span></div>
     <h3>The dive</h3>
     <p>Set a stake and launch. <b>Hold Descend</b> to dive — your multiplier climbs with depth. <b>Release to hover</b>, then <b>Surface &amp; Collect</b> to bank stake × multiplier, or <b>Bank Half</b> to secure half and keep diving. A hidden hazard ends the dive; surface first.</p>
     <p>While hovering, a decision clock runs. On timeout you are <b>auto-surfaced and paid</b> — the clock never advances you into risk.</p>
+    <p><b>Auto-dive</b> (optional): set a target multiplier and the dive runs hands-free, surfacing and banking automatically the moment it reaches your target. You can still tap Surface to take it early. It only ever banks — never pushes you deeper.</p>
     <h3>Sounding profile</h3>
     <table class="paytable">
       <tr><td>03 · Twilight</td><td>1.39×</td></tr>
@@ -1247,6 +1442,10 @@ document.addEventListener('click',function(e){
     <p>Overall jackpot odds: <b>1 in 10,000</b> full-hold dives. The pool grows from a 1% contribution on every wager.</p>
     <h3>Fairness</h3>
     <p>Every outcome derives from <b>HMAC-SHA256(server seed, client seed : nonce : tag)</b>. The server seed's hash is committed before play and revealed on rotation; your client seed is editable while idle. The base dive returns an exact <b>96%</b> per dive, strategy-independent (no timing or cash-out pattern changes it). A further <b>1%</b> is skimmed from every qualifying wager into the progressive pool and returned in full over the long run, network-wide, for a blended <b>97%</b>. Qualifying stake is 50+ CR; smaller stakes play the pure 96% base game.</p>
+    <h3>Settings</h3>
+    <div class="set-row"><span>Sound effects</span><button class="set-tgl" id="setSound" type="button">On</button></div>
+    <div class="set-row"><span>Reduced motion</span><button class="set-tgl off" id="setMotion" type="button">Off</button></div>
+    <button class="set-reset" id="setReset" type="button">Reset demo progress</button>
     <button class="modal-close" id="rulesclose">Back to the dive</button>
   </div>
 </div>
