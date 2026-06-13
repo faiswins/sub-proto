@@ -482,7 +482,7 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
         <div class="bl">Balance</div>
         <div><b id="bal">1,000.00</b><span class="u">CR</span></div>
       </div>
-      <button class="infobtn" id="net" aria-label="Live activity">≋</button>
+      <button class="infobtn" id="net" aria-label="Leaderboard" title="Leaderboard"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v3a6 6 0 0 1-12 0V4z"/><path d="M6 5H4.5a1.5 1.5 0 0 0 0 3H6M18 5h1.5a1.5 1.5 0 0 1 0 3H18"/><path d="M10 14h4M9 19h6M12 14v5"/></svg></button>
       <button class="infobtn" id="info" aria-label="Game rules">ⓘ</button>
       <button class="sndbtn" id="snd" aria-label="Toggle sound">♪</button>
     </div>
@@ -493,10 +493,6 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
     <span class="jp-val"><span id="jpval">0.00</span><span class="jp-u">CR</span></span>
   </div>
 
-  <div class="feed">
-    <span class="feed-lab">Live soundings</span>
-    <div class="feed-strip"><div class="t-in" id="ticker"></div></div>
-  </div>
 
   <div class="stage">
     <div class="profile">
@@ -581,12 +577,8 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 
   <div class="lower">
     <div class="card"><h4>Dive log</h4><div id="log"><div class="logempty">No dives recorded yet.</div></div></div>
-    <div class="card"><h4>Provably fair</h4>
-      <div class="fairc" id="fair">Each dive commits a hashed seed before you descend. The seed and every zone roll are revealed the moment the dive ends, so any outcome can be verified independently.</div>
-    </div>
   </div>
 </div>
-<footer>Concept prototype for evaluation only. Virtual credits with no monetary value. The base dive returns a verifiable 96% per dive (4% edge) and is strategy-independent: no cash-out pattern, Bank Half, or hover timing beats it. A further 1% is skimmed from every qualifying wager into the progressive pool and paid back in full over the long run, network-wide, for a blended 97% return (3% edge) across the whole player base. Stakes under 50 CR play the pure 96% base game and neither contribute to nor win the jackpot. The decision clock surfaces and banks your haul on timeout — it never advances you into further risk. Not a deployable real-money product: live play requires server-authoritative outcomes, independent certification, and licensing.</footer>
   <div class="statusbar"><span><b>18+</b> · Free demo · virtual credits · no real-money play</span><span>v<b>1.0.0</b></span></div>
 
 
@@ -683,7 +675,17 @@ let pool=JP_SEED0, reserve=0; // conserved: after the launch seed, only qualifyi
 let jackpot=pool;             // displayed value mirrors the live winnable pool
 function renderJackpot(){jackpot=pool;const e=$('jpval');if(e)e.textContent=fmt(jackpot);}
 function jpContribute(amt){pool+=amt*JP_LIVE;reserve+=amt*JP_RESV;renderJackpot();}
-function awardJackpot(){const payout=pool;pool=JP_RESEED+Math.random()*4000;reserve=0;renderJackpot();return payout;} // DEMO: reseed to a headline band so the pool stays lively (a real build resets to accrued reserve only)
+function awardJackpot(){const payout=pool;pool=JP_RESEED+Math.random()*4000;reserve=0;renderJackpot();return payout;} // local fallback when offline
+/* shared progressive pool (Supabase): grows from real wagers, paid down on a win, same number for everyone */
+async function jpFetch(){if(!LB_ON||typeof fetch!=='function')return;try{const r=await fetch(SB_URL+'/rest/v1/jackpot?id=eq.1&select=pool',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});if(r.ok){const a=await r.json();if(a&&a[0]&&a[0].pool!=null){pool=Number(a[0].pool);renderJackpot();}}}catch(e){}}
+function jpContributeShared(amt){
+  if(LB_ON&&typeof fetch==='function'){try{fetch(SB_URL+'/rest/v1/rpc/jp_contribute',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_amt:amt})}).then(r=>r.ok?r.json():null).then(v=>{if(v!=null){pool=Number(v);renderJackpot();}});}catch(e){jpContribute(amt);}}
+  else jpContribute(amt);
+}
+async function getJackpotPayout(){
+  if(LB_ON&&typeof fetch==='function'){try{const r=await fetch(SB_URL+'/rest/v1/rpc/jp_award',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:'{}'});if(r.ok){const v=await r.json();pool=5000;renderJackpot();return Number(v)||0;}}catch(e){}}
+  return awardJackpot();
+}
 
 /* ---------- seed ---------- */
 function randHex(n){const a=new Uint8Array(n);crypto.getRandomValues(a);return [...a].map(b=>b.toString(16).padStart(2,'0')).join('');}
@@ -693,6 +695,7 @@ function rollFrom(hex){return parseInt(hex.slice(0,8),16)/0x100000000;}        /
 async function commitServer(){serverSeed=randHex(32);serverHash=await sha(serverSeed);nonce=0;} // PROTOTYPE ONLY: in production the server seed is generated and held server-side; the client only ever sees its hash until rotation
 function newClientSeed(){clientSeed=randHex(8);}
 function fairPanel(){
+  if(!$('fair'))return;
   const live=state!=='idle';
   let h='<span class="k">SERVER HASH</span> '+serverHash.slice(0,44)+'…<br>'+
     '<span class="k">CLIENT</span> <b id="cseed"'+(live?'':' style="cursor:pointer;text-decoration:underline dotted"')+'>'+clientSeed+'</b>'+
@@ -814,7 +817,7 @@ async function launch(){
   saveState();
   stake=amt;work=amt;p=0;M=1;banked=0;crashed=false;holding=false;lastLevel=0;
   jpEligible=amt>=JP_MIN_BET;
-  if(jpEligible)jpContribute(amt);   // skim ONLY from qualifying stakes; sub-50 dives are pure 96% base game
+  if(jpEligible)jpContributeShared(amt);   // contribute 1% of a qualifying stake to the shared network pool
   state='descending';render();
   await genDive();
   state='diving';$('haul').className='haul';
@@ -899,8 +902,8 @@ function mawCrash(){
   sfx.breach();
   setTimeout(()=>resolveMaw(false),800);
 }
-function resolveMaw(won){
-  const jp=won?awardJackpot():0;if(won){stats.vaults++;hap([12,28,12,28,55]);track('jackpot',{total:banked+jp});}
+async function resolveMaw(won){
+  const jp=won?await getJackpotPayout():0;if(won){stats.vaults++;hap([12,28,12,28,55]);track('jackpot',{total:banked+jp});}
   if(jp)setBal(balance+jp,'up');
   const total=banked+jp;state='done';$('haul').className='haul win';
   $('descend').textContent='Hold to dive ▼';
@@ -939,7 +942,7 @@ function finish(win,total){
   if(p>stats.deepest)stats.deepest=p;
   if(total>stats.biggest)stats.biggest=total;
   if(total>stats.seasonBest)stats.seasonBest=total;
-  stats.returned+=total;saveState();lbSubmit();track('end',{mult:M,total:total});
+  stats.returned+=total;saveState();lbSubmit();track('end',{mult:M,total:total});rdPost(M,win);
   fairPanel();
   log.unshift({m:M,zone:zoneNameAt(p),win,total});log=log.slice(0,8);
   $('log').innerHTML=log.map(e=>(
@@ -962,7 +965,7 @@ window.addEventListener('load',()=>{sizeCol();sizeGauge();});
 function initFx(){
   motes=[];for(let i=0;i<28;i++)motes.push({x:Math.random(),y:Math.random(),v:0.00003+Math.random()*0.0001,r:Math.random()*1.4+0.3});
   rays=[];for(let i=0;i<5;i++)rays.push({x:0.12+i*0.19,w:0.05+Math.random()*0.06,ph:Math.random()*6.3,sp:0.00018+Math.random()*0.0003});
-  creatures=[];for(let i=0;i<3;i++)creatures.push({x:Math.random(),y:0.55+Math.random()*0.4,vx:(Math.random()<0.5?-1:1)*(0.00006+Math.random()*0.0001),ph:Math.random()*6.3,r:6+Math.random()*7});initDivers();
+  creatures=[];for(let i=0;i<3;i++)creatures.push({x:Math.random(),y:0.55+Math.random()*0.4,vx:(Math.random()<0.5?-1:1)*(0.00006+Math.random()*0.0001),ph:Math.random()*6.3,r:6+Math.random()*7});
 }
 function burst(n){for(let i=0;i<n;i++)bubbles.push({x:0.5+(Math.random()-0.5)*0.10,y:subY/cv.height,v:0.0022+Math.random()*0.0035,r:Math.random()*2.4+1,a:0.9});}
 function brassShimmer(n){for(let i=0;i<n;i++)brass.push({x:Math.random(),y:0.45+Math.random()*0.5,vy:-0.0014-Math.random()*0.0024,r:Math.random()*2.6+1.4,a:0.98,tw:Math.random()*6.3});}
@@ -1120,7 +1123,7 @@ function drawCol(t){
     cx.strokeStyle='rgba(120,200,235,'+(0.08*pulse).toFixed(3)+')';cx.lineWidth=1*dpr;
     for(let i=-1;i<2;i++){cx.beginPath();cx.moveTo(crt.x*W+i*rr*0.4,cyp+rr);cx.quadraticCurveTo(crt.x*W+i*rr*0.4+Math.sin(crt.ph+i)*3*dpr,cyp+rr*2.2,crt.x*W+i*rr*0.4,cyp+rr*3);cx.stroke();}
   }
-  drawDivers(t,W,H,dpr);
+  if(divers.length)drawDivers(t,W,H,dpr);
   // marine snow (glows in the deep)
   for(const p of motes){if(!reduce)p.y-=p.v;if(p.y<0)p.y=1;
     cx.fillStyle=p.y>0.5?'rgba(170,225,255,'+(0.05+0.15*p.y).toFixed(3)+')':'rgba(210,224,244,'+(0.05+0.1*(1-p.y)).toFixed(3)+')';
@@ -1209,27 +1212,33 @@ function entry(){
   const mx=1.1+Math.random()*Math.random()*30;
   return '<span class="entry ko"><span class="who">'+n+'</span> · breached '+mx.toFixed(2)+'× · <b>0.00</b></span>';
 }
-/* ghost divers — ambient fleet sharing the tank (locally simulated) */
-function spawnDiver(){const left=Math.random()<0.5;
-  return {x:left?0.15+Math.random()*0.23:0.62+Math.random()*0.23, p:0, vp:0.00016+Math.random()*0.00034,
-    target:0.16+Math.random()*Math.random()*0.82, name:NAMES[(Math.random()*NAMES.length)|0], st:'dive', fade:1};}
-function initDivers(){divers=[];for(let i=0;i<6;i++){const d=spawnDiver();d.p=Math.random()*0.8;divers.push(d);}}
+/* ghost subs — REAL recent dives by other players (from the public recent_dives table) */
+let rdList=[];   // [{username, mult, won}] most-recent real dives
+function depthFromMult(m){const M=Math.max(1.001,Number(m)||1);return Math.max(0.05,Math.min(1,Math.pow(Math.log(M)/Math.log(M_FLOOR),1/GAMMA)));}
+function spawnDiver(){
+  if(!rdList.length)return null;
+  const e=rdList[(Math.random()*rdList.length)|0],left=Math.random()<0.5;
+  return {x:left?0.14+Math.random()*0.22:0.62+Math.random()*0.22, p:0, vp:0.00018+Math.random()*0.0003,
+    target:depthFromMult(e.mult), mult:Number(e.mult)||1, won:e.won!==false, name:(e.username||'Diver'), st:'dive', fade:1};
+}
+function initDivers(){divers=[];if(!rdList.length)return;for(let i=0;i<Math.min(5,rdList.length+1);i++){const d=spawnDiver();if(d){d.p=Math.random()*d.target;divers.push(d);}}}
 function drawDivers(t,W,H,dpr){
   for(let i=0;i<divers.length;i++){let d=divers[i];
-    if(d.st==='dive'){if(!reduce)d.p+=d.vp; if(d.p>=d.target){d.st=Math.random()<0.8?'surf':'breach';}}
-    else{d.fade-=0.016; if(d.fade<=0){divers[i]=spawnDiver();continue;}}
-    const pp=Math.min(d.p,1), py=yForP(pp), px=d.x*W, mult=Math.pow(M_FLOOR,Math.pow(pp,GAMMA));
-    const a=(d.st==='dive'?0.62:d.fade*0.66), col=d.st==='breach'?'rgba(226,96,122,':'rgba(150,195,245,';
+    if(d.st==='dive'){if(!reduce)d.p+=d.vp; if(d.p>=d.target){d.st=d.won?'surf':'breach';}}
+    else{d.fade-=0.014; if(d.fade<=0){const ns=spawnDiver();if(ns){divers[i]=ns;continue;}else{divers.splice(i,1);i--;continue;}}}
+    const pp=Math.min(d.p,d.target), py=yForP(pp), px=d.x*W;
+    const a=(d.st==='dive'?0.6:d.fade*0.62), col=d.st==='breach'?'rgba(226,96,122,':'rgba(150,195,245,';
     cx.save();cx.globalAlpha=a;
     if(!reduce){cx.shadowColor=col+'0.5)';cx.shadowBlur=5*dpr;}
-    cx.fillStyle=col+'0.5)';cx.beginPath();cx.ellipse(px,py,4.4*dpr,8.4*dpr,0,0,6.3);cx.fill();cx.shadowBlur=0;
+    cx.fillStyle=col+'0.5)';cx.beginPath();cx.ellipse(px,py,4.2*dpr,8*dpr,0,0,6.3);cx.fill();cx.shadowBlur=0;
     cx.fillStyle=d.st==='surf'?'rgba(150,235,190,0.9)':col+'0.9)';
     cx.beginPath();cx.arc(px,py+6*dpr,1.3*dpr,0,6.3);cx.fill();
-    cx.font='600 '+(8.5*dpr)+'px "IBM Plex Mono"';cx.textAlign=d.x<0.5?'left':'right';
-    const tx=px+(d.x<0.5?9*dpr:-9*dpr);
-    const lab=d.st==='surf'?('▲ '+mult.toFixed(2)+'×'):(d.st==='breach'?'✕':mult.toFixed(2)+'×');
-    cx.fillStyle=d.st==='breach'?'rgba(226,120,140,0.92)':(d.st==='surf'?'rgba(150,235,190,0.95)':'rgba(170,195,225,0.72)');
-    cx.fillText(lab,tx,py+3*dpr);cx.restore();
+    cx.textAlign=d.x<0.5?'left':'right';const tx=px+(d.x<0.5?9*dpr:-9*dpr);
+    cx.font='600 '+(8*dpr)+'px Manrope';cx.fillStyle='rgba(200,214,238,0.68)';cx.fillText(d.name,tx,py-1*dpr);
+    cx.font='600 '+(8*dpr)+'px "IBM Plex Mono"';
+    const lab=(d.st==='breach'?'✕ ':'▲ ')+d.mult.toFixed(2)+'×';
+    cx.fillStyle=d.st==='breach'?'rgba(226,120,140,0.92)':(d.st==='surf'?'rgba(150,235,190,0.95)':'rgba(170,195,225,0.7)');
+    cx.fillText(lab,tx,py+8*dpr);cx.restore();
   }
 }
 function buildTicker(){let s='';for(let i=0;i<16;i++)s+=entry();$('ticker').innerHTML=s+s;}
@@ -1242,11 +1251,6 @@ function buildActivity(){
   {const rg=$('recgrid');if(rg){const wr=stats.dives?Math.round(stats.wins/stats.dives*100):0,net=stats.returned-stats.wagered;
     rg.innerHTML=[['Dives',stats.dives],['Win rate',wr+'%'],['Best multiple',(stats.best||0).toFixed(2)+'×'],['Deepest',Math.round((stats.deepest||0)*100)+'%'],['Biggest haul',fmt(stats.biggest||0)],['◆ Vaults',stats.vaults],['Wagered',fmt(stats.wagered||0)],['Net',(net>=0?'+':'')+fmt(net)]]
       .map(r=>'<div class="rec"><span class="rk">'+r[0]+'</span><span class="rv">'+r[1]+'</span></div>').join('');}}
-  let lg='';for(let i=0;i<14;i++){const n=NAMES[(Math.random()*NAMES.length)|0],r=Math.random();
-    if(r<0.06){const amt=38000+Math.random()*22000;lg+='<div class="act-row"><span class="who">'+n+'</span><span class="amt vault">◆ Vault +'+fmt(amt)+'</span></div>';}
-    else if(r<0.64){const mx=1.2+Math.random()*Math.random()*22,amt=mx*[10,25,50,100][(Math.random()*4)|0];lg+='<div class="act-row"><span class="who">'+n+'</span><span class="amt ok">'+mx.toFixed(2)+'× · +'+fmt(amt)+'</span></div>';}
-    else{const mx=1.1+Math.random()*Math.random()*30;lg+='<div class="act-row"><span class="who">'+n+'</span><span class="amt ko">breached '+mx.toFixed(2)+'×</span></div>';}}
-  const al=$('actlog');if(al)al.innerHTML=lg;
   checkSeason();
   if(LB_ON)buildRealLB();else buildSimLB();
 }
@@ -1254,15 +1258,10 @@ function lbRowsHTML(arr){let lb='<tr><th>#</th><th>Diver</th><th class="r">Best 
   arr.forEach((r,i)=>{lb+='<tr'+(r.you?' class="you"':'')+'><td>'+(i+1)+'</td><td>'+esc(r.n)+'</td><td class="r">'+(r.haul>0?'+'+fmt(r.haul):'—')+'</td></tr>';});return lb;}
 function seasonHdr(extra){const ms=seasonEndsIn(),dd=Math.floor(ms/864e5),hh=Math.floor(ms%864e5/36e5);return 'Resets in '+dd+'d '+hh+'h'+(extra||'');}
 function buildSimLB(){
-  const rnd=rngFrom(stats.seasonId*7919+101),used={},rivals=[];
-  while(rivals.length<9){const nm=NAMES[(rnd()*NAMES.length)|0];if(used[nm])continue;used[nm]=1;
-    rivals.push({n:nm,haul:400+Math.pow(rnd(),2.2)*42000,you:false});}
-  rivals.push({n:username||'You',haul:stats.seasonBest||0,you:true});
-  rivals.sort((a,b)=>b.haul-a.haul);
-  const rank=rivals.findIndex(r=>r.you)+1;
-  const hd=$('lbhead');if(hd)hd.textContent=seasonHdr(' · you’re #'+rank+' of '+rivals.length);
-  const lbb=$('lbbody');if(lbb)lbb.innerHTML=lbRowsHTML(rivals);
   renderNameRow();
+  const hd=$('lbhead');if(hd)hd.textContent=seasonHdr(username&&stats.seasonBest>0?' · your best +'+fmt(stats.seasonBest):'');
+  const me=[{n:username||'You',haul:stats.seasonBest||0,you:true}];
+  const lbb=$('lbbody');if(lbb)lbb.innerHTML=lbRowsHTML(me)+'<tr><td colspan="3" style="text-align:center;color:var(--steel-mute);padding:8px">Live rankings load when connected</td></tr>';
 }
 function buildRealLB(){
   renderNameRow();
@@ -1282,8 +1281,8 @@ function renderNameRow(){
   const el=$('lbname');if(!el)return;
   if(username){el.innerHTML='Playing as <b>'+esc(username)+'</b> · <a id="lbchg" style="cursor:pointer;color:var(--brass)">change</a>';
     const c=$('lbchg');if(c)c.onclick=function(){username='';saveState();buildActivity();};}
-  else{el.innerHTML='<input id="lbnameinput" maxlength="16" placeholder="Pick a username" aria-label="Username"><button id="lbjoin" type="button">Join</button>';
-    const j=$('lbjoin');if(j)j.onclick=function(){const v=cleanName(($('lbnameinput')||{}).value);if(v.length<2)return;username=v;saveState();lbSubmit();buildActivity();};}
+  else{el.innerHTML='<span style="width:100%;text-align:center;color:var(--steel);margin-bottom:2px">Choose a username to join the leaderboard</span><input id="lbnameinput" maxlength="16" placeholder="Pick a username" aria-label="Username"><button id="lbjoin" type="button">Join</button>';
+    const j=$('lbjoin');if(j)j.onclick=function(){const v=cleanName(($('lbnameinput')||{}).value);if(v.length<2||badName(v)){const h=$('lbhead');if(h)h.textContent=(v.length<2?'Enter at least 2 characters':'Please choose a different name');return;}username=v;saveState();lbSubmit();buildActivity();};}
 }
 
 /* ---------- inputs ---------- */
@@ -1338,6 +1337,8 @@ function rngFrom(seed){return function(){seed=seed+0x6D2B79F5|0;let t=Math.imul(
 /* ---------- online leaderboard (Supabase REST) ---------- */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function cleanName(s){return (s||'').replace(/[^A-Za-z0-9 _-]/g,'').trim().slice(0,16);}
+const BADWORDS=['fuck','shit','cunt','bitch','asshole','nigger','nigga','faggot','fag','dick','pussy','cock','whore','slut','rape','retard','dahs'];
+function badName(s){const t=(s||'').toLowerCase().replace(/[^a-z]/g,'');return BADWORDS.some(function(w){return t.indexOf(w)>=0;});}
 async function lbSubmit(){
   if(!LB_ON||!username||!(stats.seasonBest>0)||typeof fetch!=='function')return;
   try{await fetch(SB_URL+'/rest/v1/rpc/submit_score',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_name:username,p_haul:Math.round((stats.seasonBest||0)*100)/100,p_season:seasonNow()})});}catch(e){}
@@ -1345,6 +1346,16 @@ async function lbSubmit(){
 async function lbFetch(){
   if(!LB_ON||typeof fetch!=='function')return null;
   try{const r=await fetch(SB_URL+'/rest/v1/leaderboard?season=eq.'+seasonNow()+'&order=best_haul.desc&limit=20&select=username,best_haul',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});if(!r.ok)return null;return await r.json();}catch(e){return null;}
+}
+/* ghost subs feed — public recent dives (read + insert) */
+async function rdFetch(){
+  if(!LB_ON||typeof fetch!=='function')return;
+  try{const r=await fetch(SB_URL+'/rest/v1/recent_dives?order=ts.desc&limit=12&select=username,mult,won',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});
+    if(!r.ok)return;const rows=await r.json();if(Array.isArray(rows)){rdList=rows;if(!divers.length)initDivers();}}catch(e){}
+}
+function rdPost(mult,won){
+  if(!LB_ON||typeof fetch!=='function'||!username)return;   // only post named dives to the public feed
+  try{fetch(SB_URL+'/rest/v1/recent_dives',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({username:username.slice(0,16),mult:Math.round((Number(mult)||1)*100)/100,won:!!won})});}catch(e){}
 }
 /* private usage metrics — anonymous, insert-only (no PII) */
 function track(name,d){
@@ -1358,8 +1369,10 @@ if(!clientId){clientId='c'+Date.now().toString(36)+Math.random().toString(36).sl
 track('session');
 $('snd').textContent=soundOn?'♪':'∅';$('snd').classList.toggle('off',!soundOn);
 if(!seen){const mh=$('msg');if(mh){mh.innerHTML='New here? <b>Hold the dive button</b> to descend — release any time to bank your haul.';mh.classList.add('hint');}}
-sizeCol();sizeGauge();initFx();buildTicker();renderJackpot();setBal(balance);render();requestAnimationFrame(drawCol);requestAnimationFrame(drawGauge);
+sizeCol();sizeGauge();initFx();renderJackpot();setBal(balance);render();requestAnimationFrame(drawCol);requestAnimationFrame(drawGauge);
 newClientSeed();commitServer().then(fairPanel);
+rdFetch();setInterval(rdFetch,25000);
+jpFetch();setInterval(jpFetch,15000);
 /* ---------- social layer wiring ---------- */
 (function(){
   const open=()=>{buildActivity();$('activity').classList.add('open');};
@@ -1368,8 +1381,7 @@ newClientSeed();commitServer().then(fairPanel);
   const c=$('actclose');if(c)c.onclick=close;
   const m=$('activity');if(m)m.addEventListener('click',e=>{if(e.target===m)close();});
   addEventListener('keydown',e=>{if(e.key==='Escape')close();});
-  (function ping(){setTimeout(()=>{showVaultToast();ping();},22000+Math.random()*24000);})();
-  setInterval(()=>{if(pool<90000){pool+=3+Math.random()*15;renderJackpot();}},2200); // simulated network contributions (demo only)
+  if(!username)setTimeout(()=>{buildActivity();$('activity').classList.add('open');},900);
 })();
 
 /* splash + rules + settings wiring */
@@ -1406,17 +1418,15 @@ document.addEventListener('click',function(e){
 <div class="vtoast" id="vtoast" role="status" aria-live="polite"></div>
 <div class="modal" id="activity" role="dialog" aria-modal="true" aria-label="Live activity">
   <div class="modal-card">
-    <h2>Surface <b>activity</b></h2>
-    <div class="mv">Live soundings across the fleet</div>
+    <h2>Leaderboard <b>&amp; stats</b></h2>
+    <div class="mv">Your dive record and the live season ranking</div>
     <h3>Your dive record</h3>
     <div class="rec-grid" id="recgrid"></div>
-    <h3>Recent dives</h3>
-    <div class="act-log" id="actlog"></div>
     <h3>Season leaderboard</h3>
     <div class="lb-name" id="lbname"></div>
     <div class="lb-head" id="lbhead"></div>
     <table class="lb" id="lb"><tbody id="lbbody"></tbody></table>
-    <div class="sim-note">◆ Simulated rival field · your rank &amp; best haul are real and persist all season</div>
+    <div class="sim-note">◆ Live season ranking · resets weekly</div>
     <button class="modal-close" id="actclose">Back to the dive</button>
   </div>
 </div>
