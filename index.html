@@ -583,7 +583,7 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
     <div class="card"><h4>Dive log</h4><div id="log"><div class="logempty">No dives recorded yet.</div></div></div>
   </div>
 </div>
-  <div class="statusbar"><span><b>18+</b> · Free demo · virtual credits · no real-money play</span><span>v<b>1.0.1</b></span></div>
+  <div class="statusbar"><span><b>18+</b> · Free demo · virtual credits · no real-money play</span><span>v<b>1.0.2</b></span></div>
 
 
 <script>
@@ -1303,7 +1303,7 @@ function updateJpHint(){
     ?'◆ Jackpot eligible — this stake plays <b>The Vault</b> for the full progressive.'
     :'◆ Stake <b>'+fmt(JP_MIN_BET)+'+</b> to qualify for the progressive jackpot.';
 }
-document.querySelectorAll('.chip').forEach(c=>{c.onclick=()=>{sfx.click();$('stake').value=c.dataset.v==='max'?(balance/100).toFixed(2):c.dataset.v;updateJpHint();};});
+document.querySelectorAll('.chip').forEach(c=>{c.onclick=()=>{sfx.click();$('stake').value=c.dataset.v==='max'?(Math.floor(balance)/100).toFixed(2):c.dataset.v;updateJpHint();};});
 $('stake').addEventListener('input',updateJpHint);updateJpHint();
 
 /* ---------- persistence (localStorage — fine on a hosted page) ---------- */
@@ -1457,7 +1457,7 @@ document.addEventListener('click',function(e){
 <div class="modal" id="rules" role="dialog" aria-modal="true" aria-label="Game rules">
   <div class="modal-card">
     <h2>How to play <b>FATHOM</b></h2>
-    <div class="mv">v1.0.1 · RTP 96% + 1% ◆ jackpot · Provably fair · Free demo — virtual credits, no real-money play</div>
+    <div class="mv">v1.0.2 · RTP 96% + 1% ◆ jackpot · Provably fair · Free demo — virtual credits, no real-money play</div>
     <div class="rules-demo" aria-hidden="true"><span class="rd-sub rd-a"></span><span class="rd-sub rd-b"></span><span class="rd-sub rd-c"></span><span class="rd-floor">◆ THE VAULT · 100× FLOOR</span></div>
     <h3>The goal</h3>
     <p>Dive as deep as you dare, then surface with your winnings before the dive crashes. <b>The deeper you go, the bigger your multiplier grows — but the greater the chance you hit a hazard and lose everything at risk.</b> Knowing when to stop is the whole game.</p>
