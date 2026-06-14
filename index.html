@@ -1262,6 +1262,7 @@ function buildActivity(){
       .map(r=>'<div class="rec"><span class="rk">'+r[0]+'</span><span class="rv">'+r[1]+'</span></div>').join('');}}
   checkSeason();
   if(LB_ON)buildRealLB();else buildSimLB();
+  renderSync();
 }
 function lbRowsHTML(arr){let lb='<tr><th>#</th><th>Diver</th><th class="r">Best haul</th></tr>';
   arr.forEach((r,i)=>{lb+='<tr'+(r.you?' class="you"':'')+'><td>'+(i+1)+'</td><td>'+esc(r.n)+'</td><td class="r">'+(r.haul>0?'+'+fmt(r.haul):'—')+'</td></tr>';});return lb;}
@@ -1431,7 +1432,6 @@ if(syncCode)syncLoad(syncCode);
   function syncSettings(){
     if(ss){ss.textContent=soundOn?'On':'Off';ss.classList.toggle('off',!soundOn);}
     if(sm){sm.textContent=motionOff?'On':'Off';sm.classList.toggle('off',!motionOff);}
-    renderSync();
   }
   const open=()=>{syncSettings();$('rules').classList.add('open');};
   const close=()=>{$('rules').classList.remove('open');};
@@ -1465,6 +1465,8 @@ document.addEventListener('click',function(e){
     <div class="lb-head" id="lbhead"></div>
     <table class="lb" id="lb"><tbody id="lbbody"></tbody></table>
     <div class="sim-note">◆ Live season ranking · resets weekly</div>
+    <h3>Sync across devices</h3>
+    <div class="syncui" id="syncui"></div>
     <button class="modal-close" id="actclose">Back to the dive</button>
   </div>
 </div>
@@ -1493,8 +1495,6 @@ document.addEventListener('click',function(e){
     <h3>Settings</h3>
     <div class="set-row"><span>Sound effects</span><button class="set-tgl" id="setSound" type="button">On</button></div>
     <div class="set-row"><span>Reduced motion</span><button class="set-tgl off" id="setMotion" type="button">Off</button></div>
-    <h3>Sync across devices</h3>
-    <div class="syncui" id="syncui"></div>
     <button class="set-reset" id="setReset" type="button">Reset demo progress</button>
     <button class="modal-close" id="rulesclose">Back to the dive</button>
   </div>
