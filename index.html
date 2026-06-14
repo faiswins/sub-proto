@@ -571,10 +571,6 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
           <button class="chip" data-v="100">100</button>
           <button class="chip" data-v="max">Max</button>
         </div>
-        <div class="autopilot">
-          <button class="auto-toggle" id="autotgl" role="switch" aria-checked="false" type="button">Auto-dive</button>
-          <div class="auto-target off" id="autotarget"><span>surface at</span><input type="number" id="autoat" value="2.00" min="1.01" step="0.25" inputmode="decimal" aria-label="Auto-surface multiplier"><span class="u">×</span></div>
-        </div>
         <div class="jphint" id="jphint"></div>
         <button class="launch" id="launch">Launch dive</button>
         <div class="msg" id="msg">Each descent multiplies your haul as survival odds fall. Surface before a hazard ends the dive.</div>
@@ -665,7 +661,6 @@ const DECIDE_MS=8000; // hover auto-surface timeout
 
 /* ---------- state ---------- */
 let balance=1000,state='idle',stake=0,work=0,banked=0;
-let auto=false,autoTarget=2;   // auto-pilot: hands-free dive that surfaces (banks) at a target multiplier
 let stats={dives:0,wins:0,best:0,deepest:0,biggest:0,vaults:0,wagered:0,returned:0,seasonBest:0,seasonId:0};
 let seen=false,motionOff=false;   // first-run flag + user reduced-motion preference
 let username='';                  // chosen display name for the online leaderboard
@@ -833,11 +828,7 @@ async function launch(){
   q2=0;mawActive=false;mawResolved=false;clearTimeout(mawTimer);
   fairPanel();
   $('msg2').innerHTML='Dive sealed. <b>Hold Descend</b> to dive — release to hover, surface to bank.';
-  subY=yForP(0);liveUpdate();render();
-  if(auto){                                  // hands-free: dive automatically, bank at the target
-    holding=true;$('descend').disabled=true;$('descend').textContent='Auto-diving ▾';$('surface').disabled=false;
-    $('msg2').innerHTML='<b>Auto-dive engaged</b> — surfacing automatically at <b>'+autoTarget.toFixed(2)+'×</b>. Tap Surface to take it early.';
-  }else timerStart();
+  subY=yForP(0);liveUpdate();render();timerStart();
 }
 function holdStart(e){
   const canDive=(state==='diving'&&!crashed&&p<1);
@@ -1077,7 +1068,6 @@ function drawCol(t){
     const pc=Math.min(p,1);
     M=Math.pow(M_FLOOR,Math.pow(pc,GAMMA));
     if(M>=Mcrash){M=Mcrash;bust();}                         // crash always takes priority (the house edge)
-    else if(auto&&M>=autoTarget){M=autoTarget;surface(false);} // auto-pilot banks at the target
     else if(p>=1){M=M_FLOOR;reachFloor();}
     else liveUpdate();
   }
@@ -1315,14 +1305,6 @@ function updateJpHint(){
 }
 document.querySelectorAll('.chip').forEach(c=>{c.onclick=()=>{sfx.click();$('stake').value=c.dataset.v==='max'?Math.floor(balance):c.dataset.v;updateJpHint();};});
 $('stake').addEventListener('input',updateJpHint);updateJpHint();
-/* auto-pilot controls */
-(function(){
-  const tgl=$('autotgl'),at=$('autoat'),wrap=$('autotarget');
-  function syncAuto(){if(tgl){tgl.classList.toggle('on',auto);tgl.setAttribute('aria-checked',auto?'true':'false');}if(wrap)wrap.classList.toggle('off',!auto);}
-  if(tgl)tgl.onclick=()=>{if(state!=='idle')return;auto=!auto;sfx.click();syncAuto();};
-  if(at)at.addEventListener('input',()=>{const v=Number(at.value);autoTarget=(isFinite(v)&&v>1.01)?v:1.01;});
-  syncAuto();
-})();
 
 /* ---------- persistence (localStorage — fine on a hosted page) ---------- */
 const LS='fathom.save.v1';
@@ -1475,23 +1457,15 @@ document.addEventListener('click',function(e){
     <h2>How to play <b>FATHOM</b></h2>
     <div class="mv">v1.0.0 · RTP 96% + 1% ◆ jackpot · Provably fair · Free demo — virtual credits, no real-money play</div>
     <div class="rules-demo" aria-hidden="true"><span class="rd-sub rd-a"></span><span class="rd-sub rd-b"></span><span class="rd-sub rd-c"></span><span class="rd-floor">◆ THE VAULT · 100× FLOOR</span></div>
-    <h3>The dive</h3>
-    <p>Set a stake and launch. <b>Hold Descend</b> to dive — your multiplier climbs with depth. <b>Release to hover</b>, then <b>Surface &amp; Collect</b> to bank stake × multiplier, or <b>Bank Half</b> to secure half and keep diving. A hidden hazard ends the dive; surface first.</p>
-    <p>While hovering, a decision clock runs. On timeout you are <b>auto-surfaced and paid</b> — the clock never advances you into risk.</p>
-    <p><b>Auto-dive</b> (optional): set a target multiplier and the dive runs hands-free, surfacing and banking automatically the moment it reaches your target. You can still tap Surface to take it early. It only ever banks — never pushes you deeper.</p>
-    <h3>Sounding profile</h3>
-    <table class="paytable">
-      <tr><td>03 · Twilight</td><td>1.39×</td></tr>
-      <tr><td>05 · Bathyal</td><td>2.72×</td></tr>
-      <tr><td>07 · Hadal</td><td>8.18×</td></tr>
-      <tr><td>09 · The Sounding</td><td>38.57×</td></tr>
-      <tr class="gold"><td>10 · The Vault (floor)</td><td>100× + bonus</td></tr>
-    </table>
-    <h3>◆ The Vault — progressive jackpot</h3>
-    <p>Reach the 100× floor with a qualifying stake (<b>50+ CR</b>) and your 100× is <b>banked instantly</b>. Then a bonus dive opens: hold to plunge The Vault toward the jackpot floor. Reach it and the <b>entire progressive pool</b> is added on top. Seal early and you keep the 100× — the bonus risks nothing.</p>
-    <p>Overall jackpot odds: <b>1 in 10,000</b> full-hold dives. The pool grows from a 1% contribution on every wager.</p>
-    <h3>Fairness</h3>
-    <p>Every outcome derives from <b>HMAC-SHA256(server seed, client seed : nonce : tag)</b>. The server seed's hash is committed before play and revealed on rotation; your client seed is editable while idle. The base dive returns an exact <b>96%</b> per dive, strategy-independent (no timing or cash-out pattern changes it). A further <b>1%</b> is skimmed from every qualifying wager into the progressive pool and returned in full over the long run, network-wide, for a blended <b>97%</b>. Qualifying stake is 50+ CR; smaller stakes play the pure 96% base game.</p>
+    <h3>The goal</h3>
+    <p>Dive as deep as you dare, then surface with your winnings before the dive crashes. <b>The deeper you go, the bigger your multiplier grows — but the greater the chance you hit a hazard and lose everything at risk.</b> Knowing when to stop is the whole game.</p>
+    <h3>How to play</h3>
+    <p><b>Hold</b> the dive button to descend — your multiplier climbs the deeper you go. <b>Let go</b> to stop safely at any time, then <b>Surface &amp; Collect</b> to bank your winnings. Push too far and a hazard ends the dive, taking everything still at risk.</p>
+    <p><b>The countdown clock:</b> each time you stop, a short timer starts. Decide before it runs out — if it reaches zero you’re <b>automatically surfaced and paid</b>. It only ever cashes you out safely; it never dives you deeper, so hesitating can’t cost you your haul.</p>
+    <p><b>Bank Half</b> locks in half your winnings while you keep diving with the rest — free insurance on a deep run.</p>
+    <h3>◆ The jackpot</h3>
+    <p>Reach the very bottom — the <b>100× floor</b> — on a qualifying stake (<b>50+ credits</b>) and that 100× win is <b>banked instantly</b>. Then a <b>free bonus dive</b> into the Vault opens: ride it all the way to the floor and you win the <b>entire jackpot pool</b> on top. Come up short and you simply keep your 100× — the bonus risks nothing. The pool is <b>shared by everyone</b> and grows with every dive, climbing until someone cracks it.</p>
+    <p style="font-size:10.5px;color:var(--steel-mute);margin-top:10px">96% RTP · provably fair · free demo, virtual credits, no real money · 18+</p>
     <h3>Settings</h3>
     <div class="set-row"><span>Sound effects</span><button class="set-tgl" id="setSound" type="button">On</button></div>
     <div class="set-row"><span>Reduced motion</span><button class="set-tgl off" id="setMotion" type="button">Off</button></div>
