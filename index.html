@@ -420,8 +420,8 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .act-row .who{color:var(--foam)}
 .act-row .amt.ok{color:var(--lume-deep)} .act-row .amt.ko{color:var(--steel-mute)} .act-row .amt.vault{color:var(--brass);font-weight:600}
 .lb{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;margin-top:2px}
-.lb th{font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--steel-mute);text-align:left;padding:4px 6px;border-bottom:1px solid var(--hair)}
-.lb td{padding:6px;border-bottom:1px solid rgba(159,208,240,0.06);color:#c8d4e6}
+.lb th{font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--steel-mute);text-align:left;padding:2px 6px;border-bottom:1px solid var(--hair)}
+.lb td{padding:3px 6px;border-bottom:1px solid rgba(159,208,240,0.06);color:#c8d4e6}
 .lb td.r,.lb th.r{text-align:right}
 .lb tr:last-child td{border-bottom:none}
 .sim-note{font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--steel-mute);text-align:center;margin-top:12px}
@@ -583,7 +583,7 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
     <div class="card"><h4>Dive log</h4><div id="log"><div class="logempty">No dives recorded yet.</div></div></div>
   </div>
 </div>
-  <div class="statusbar"><span><b>18+</b> · Free demo · virtual credits · no real-money play</span><span>v<b>1.0.3</b></span></div>
+  <div class="statusbar"><span><b>18+</b> · Free demo · virtual credits · no real-money play</span><span>v<b>1.0.4</b></span></div>
 
 
 <script>
@@ -1359,7 +1359,7 @@ async function lbSubmit(){
 }
 async function lbFetch(){
   if(!LB_ON||typeof fetch!=='function')return null;
-  try{const r=await fetch(SB_URL+'/rest/v1/leaderboard?season=eq.'+seasonNow()+'&order=best_haul.desc&limit=20&select=username,best_haul',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});if(!r.ok)return null;return await r.json();}catch(e){return null;}
+  try{const r=await fetch(SB_URL+'/rest/v1/leaderboard?season=eq.'+seasonNow()+'&order=best_haul.desc&limit=10&select=username,best_haul',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});if(!r.ok)return null;return await r.json();}catch(e){return null;}
 }
 /* ghost subs feed — public recent dives (read + insert) */
 async function rdFetch(){
@@ -1449,15 +1449,15 @@ document.addEventListener('click',function(e){
     <div class="lb-head" id="lbhead"></div>
     <table class="lb" id="lb"><tbody id="lbbody"></tbody></table>
     <div class="sim-note">◆ Live season ranking · resets weekly</div>
+    <button class="modal-close" id="actclose">Back to the dive</button>
     <h3>Sync across devices</h3>
     <div class="syncui" id="syncui"></div>
-    <button class="modal-close" id="actclose">Back to the dive</button>
   </div>
 </div>
 <div class="modal" id="rules" role="dialog" aria-modal="true" aria-label="Game rules">
   <div class="modal-card">
     <h2>How to play <b>FATHOM</b></h2>
-    <div class="mv">v1.0.3 · RTP 96% + 1% ◆ jackpot · Provably fair · Free demo — virtual credits, no real-money play</div>
+    <div class="mv">v1.0.4 · RTP 96% + 1% ◆ jackpot · Provably fair · Free demo — virtual credits, no real-money play</div>
     <div class="rules-demo" aria-hidden="true"><span class="rd-sub rd-a"></span><span class="rd-sub rd-b"></span><span class="rd-sub rd-c"></span><span class="rd-floor">◆ THE VAULT · 100× FLOOR</span></div>
     <h3>The goal</h3>
     <p>Dive as deep as you dare, then surface with your winnings before the dive crashes. <b>The deeper you go, the bigger your multiplier grows — but the greater the chance you hit a hazard and lose everything at risk.</b> Knowing when to stop is the whole game.</p>
