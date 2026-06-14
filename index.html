@@ -488,7 +488,7 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
     <div class="hr-right">
       <div class="bal">
         <div class="bl">Balance</div>
-        <div><b id="bal">1,000.00</b><span class="u">CR</span></div>
+        <div><b id="bal">$10.00</b></div>
       </div>
       <button class="infobtn" id="net" aria-label="Leaderboard" title="Leaderboard"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v3a6 6 0 0 1-12 0V4z"/><path d="M6 5H4.5a1.5 1.5 0 0 0 0 3H6M18 5h1.5a1.5 1.5 0 0 1 0 3H18"/><path d="M10 14h4M9 19h6M12 14v5"/></svg></button>
       <button class="infobtn" id="info" aria-label="Game rules">ⓘ</button>
@@ -498,7 +498,7 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 
   <div class="jackpot" id="jackpot">
     <span class="jp-lab">◆ Progressive Jackpot</span>
-    <span class="jp-val"><span id="jpval">0.00</span><span class="jp-u">CR</span></span>
+    <span class="jp-val"><span id="jpval">$0.00</span></span>
   </div>
 
 
@@ -563,12 +563,12 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 
       <div class="card stake" id="startctrl">
         <div class="lab">Stake</div>
-        <div class="stakerow"><input type="number" id="stake" value="50" min="1" step="1" aria-label="Stake"><span class="u">CR</span></div>
+        <div class="stakerow"><span class="u">$</span><input type="number" id="stake" value="0.50" min="0.10" step="0.10" aria-label="Stake"></div>
         <div class="chips">
-          <button class="chip" data-v="10">10</button>
-          <button class="chip" data-v="25">25</button>
-          <button class="chip" data-v="50">50</button>
-          <button class="chip" data-v="100">100</button>
+          <button class="chip" data-v="0.10">$0.10</button>
+          <button class="chip" data-v="0.25">$0.25</button>
+          <button class="chip" data-v="0.50">$0.50</button>
+          <button class="chip" data-v="1.00">$1</button>
           <button class="chip" data-v="max">Max</button>
         </div>
         <div class="jphint" id="jphint"></div>
@@ -598,7 +598,7 @@ const $=id=>document.getElementById(id);
 const SB_URL='https://hpmraewdlhgotovvnkia.supabase.co';   // Supabase project URL
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwbXJhZXdkbGhnb3RvdnZua2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzM1MzYsImV4cCI6MjA5Njk0OTUzNn0.F1Ib80WuNpPtYOrHdd0CpWc8m38Qi_dXhMejieJHqBA';   // anon (public) key — safe to expose
 const LB_ON=!!(SB_URL&&SB_KEY);
-const fmt=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt=n=>'$'+(n/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});  // 100 CR = $1 (1000 CR = $10)
 let reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;const osReduce=reduce;
 const mobile=window.matchMedia('(max-width:480px)').matches;
 
@@ -778,7 +778,7 @@ function render(){
   $('nextname').textContent=zoneNameAt(p);
   $('carrot').innerHTML=jpEligible
     ?'<b class="gold">The Vault</b>: '+M_FLOOR+'× floor + ◆ jackpot bonus game'
-    :'<b class="gold">The Vault</b>: '+M_FLOOR+'× floor · stake '+JP_MIN_BET+'+ for ◆ jackpot';
+    :'<b class="gold">The Vault</b>: '+M_FLOOR+'× floor · stake '+fmt(JP_MIN_BET)+'+ for ◆ jackpot';
   if(jpEligible){$('odds').textContent='1 in '+JP_ODDS.toLocaleString();$('odds').className='odds';}
   else{$('odds').textContent='not eligible';$('odds').className='odds';}
 
@@ -800,7 +800,7 @@ function celebrate(mult,total,jp){
   const isJp=jp>0;
   $('celetier').textContent=isJp?'PROGRESSIVE JACKPOT':tier[1];
   countUp($('celeamt'),total,isJp?1100:720);
-  $('celesub').textContent=isJp?('Jackpot pool of '+fmt(jp)+' CR claimed'):('Surfaced at '+mult.toFixed(2)+'×');
+  $('celesub').textContent=isJp?('Jackpot pool of '+fmt(jp)+' claimed'):('Surfaced at '+mult.toFixed(2)+'×');
   const c=$('cele');c.classList.add('show');c.classList.toggle('jp',isJp);
   if(isJp){const jb=$('jackpot');jb.classList.add('win');setTimeout(()=>jb.classList.remove('win'),700);}
   const gt=$('gtier');gt.textContent=isJp?'JACKPOT':tier[1];gt.style.display='block';
@@ -813,7 +813,7 @@ function celebrate(mult,total,jp){
 
 /* ---------- dive flow (continuous) ---------- */
 async function launch(){
-  const amt=Math.floor(Number($('stake').value));
+  const amt=Math.round(Number($('stake').value)*100);  // input is $, internal credits are CR (100 CR = $1)
   if(!amt||amt<1){$('msg').textContent='Enter a stake of at least 1 credit.';return;}
   if(amt>balance){$('msg').textContent='Stake exceeds your balance.';return;}
   sfx.click();setBal(balance-amt);stats.dives++;stats.wagered+=amt;track('launch',{stake:amt});
@@ -842,7 +842,7 @@ function holdEnd(){
   if(!holding)return;holding=false;
   if(state==='diving'){
     sfx.clear&&sfx.clear();
-    $('msg2').innerHTML='Holding at <b>'+M.toFixed(2)+'×</b> — <b class="gold">'+fmt(work*M)+'</b> CR at risk. Surface to bank, or hold to dive on.';
+    $('msg2').innerHTML='Holding at <b>'+M.toFixed(2)+'×</b> — <b class="gold">'+fmt(work*M)+'</b> at risk. Surface to bank, or hold to dive on.';
     render();timerStart();
   }else if(state==='maw'&&!mawResolved){
     $('msg2').innerHTML='Hovering in <b class="gold">The Vault</b>. Hold to plunge on toward the jackpot floor.';
@@ -853,7 +853,7 @@ function celebrateFloor(amt,eligible){
   countUp($('celeamt'),amt,820);
   $('celesub').innerHTML=eligible
     ?'Banked &amp; safe — this win is yours. <b>Bonus round:</b> dive The Vault for the ◆ jackpot.'
-    :'Banked &amp; safe — your top win. Stake <b>'+JP_MIN_BET+'+ CR</b> to unlock the ◆ jackpot bonus.';
+    :'Banked &amp; safe — your top win. Stake <b>'+fmt(JP_MIN_BET)+'+</b> to unlock the ◆ jackpot bonus.';
   const c=$('cele');c.classList.add('show');c.classList.remove('jp');
   const gt=$('gtier');gt.textContent=M_FLOOR+'×';gt.style.display='block';
   $('gmult').style.display='none';$('gdepth').style.display='none';$('gzone').style.display='none';
@@ -869,7 +869,7 @@ function reachFloor(){
   $('haul').textContent=fmt(banked);$('haul').className='haul win';
   if(jpEligible){
     state='maw';q2=0;mawActive=false;mawResolved=false;
-    $('haulsub').innerHTML='<b class="gold">'+M_FLOOR+'×</b> floor banked · <b>'+fmt(banked)+'</b> CR safe';
+    $('haulsub').innerHTML='<b class="gold">'+M_FLOOR+'×</b> floor banked · <b>'+fmt(banked)+'</b> safe';
     $('descend').disabled=true;$('descend').textContent='Bonus incoming…';
     $('surface').disabled=true;$('banktwo').disabled=true;
     $('msg2').innerHTML='<b class="gold">THE VAULT — '+M_FLOOR+'× SECURED.</b> That win is banked and safe.';
@@ -877,8 +877,8 @@ function reachFloor(){
     clearTimeout(mawTimer);mawTimer=setTimeout(beginMawRun,2500);
   }else{
     state='done';
-    $('haulsub').innerHTML='<b class="gold">'+M_FLOOR+'×</b> floor · <b>'+fmt(banked)+'</b> CR banked';
-    $('msg2').innerHTML='<b class="gold">'+M_FLOOR+'× — the floor!</b> Stake <b>'+JP_MIN_BET+'+ CR</b> next dive to play The Vault for the ◆ jackpot.';
+    $('haulsub').innerHTML='<b class="gold">'+M_FLOOR+'×</b> floor · <b>'+fmt(banked)+'</b> banked';
+    $('msg2').innerHTML='<b class="gold">'+M_FLOOR+'× — the floor!</b> Stake <b>'+fmt(JP_MIN_BET)+'+</b> next dive to play The Vault for the ◆ jackpot.';
     celebrateFloor(floorPay,false);
     finish(true,banked);
   }
@@ -908,16 +908,16 @@ async function resolveMaw(won){
   const total=banked+jp;state='done';$('haul').className='haul win';
   $('descend').textContent='Hold to dive ▼';
   if(won){celebrate(M,total,jp);
-    $('msg2').innerHTML='<b class="gold">JACKPOT.</b> You rode the Maw to the jackpot floor — <b>'+fmt(total)+'</b> CR.';
+    $('msg2').innerHTML='<b class="gold">JACKPOT.</b> You rode the Maw to the jackpot floor — <b>'+fmt(total)+'</b>.';
   }else{sfx.win&&sfx.win();brassShimmer(40);
-    $('msg2').innerHTML='The Vault sealed before the floor. Your <b class="gold">'+M_FLOOR+'×</b> stays banked — <b>'+fmt(total)+'</b> CR. Dive again for another shot.';
+    $('msg2').innerHTML='The Vault sealed before the floor. Your <b class="gold">'+M_FLOOR+'×</b> stays banked — <b>'+fmt(total)+'</b>. Dive again for another shot.';
   }
   finish(true,total);
 }
 function bankHalf(){
   if(state!=='diving')return;
   const h=work*M,take=h/2;setBal(balance+take,'up');banked+=take;work=work/2;sfx.bank();hap(12);
-  $('msg2').innerHTML='Banked <b>'+fmt(take)+'</b> CR. <b class="gold">'+fmt(work*M)+'</b> still at risk.';
+  $('msg2').innerHTML='Banked <b>'+fmt(take)+'</b>. <b class="gold">'+fmt(work*M)+'</b> still at risk.';
   liveUpdate();render();
 }
 function surface(auto){
@@ -926,13 +926,13 @@ function surface(auto){
   const h=work*M;setBal(balance+h,'up');burst(20);
   const total=banked+h;state='done';$('haul').className='haul win';
   (M>=5?sfx.bigwin:sfx.win)();hap(M>=5?[14,30,20]:16);celebrate(M,total,0);
-  $('msg2').innerHTML=(auto?'<b>Hover expired</b> — surfaced automatically. ':'')+'Surfaced at <b>'+M.toFixed(2)+'×</b> — collected <b>'+fmt(total)+'</b> CR.';
+  $('msg2').innerHTML=(auto?'<b>Hover expired</b> — surfaced automatically. ':'')+'Surfaced at <b>'+M.toFixed(2)+'×</b> — collected <b>'+fmt(total)+'</b>.';
   finish(true,total);
 }
 function bust(){
   timerStop();state='done';crashed=true;holding=false;sfx.breach();hap([25,50,30]);
   $('haul').textContent=fmt(work*M);$('haul').className='haul lost';
-  $('msg2').innerHTML='Hull breach at <b class="lost">'+M.toFixed(2)+'×</b>. At-risk haul lost'+(banked>0?', <b>'+fmt(banked)+'</b> CR kept from banking.':'.');
+  $('msg2').innerHTML='Hull breach at <b class="lost">'+M.toFixed(2)+'×</b>. At-risk haul lost'+(banked>0?', <b>'+fmt(banked)+'</b> kept from banking.':'.');
   finish(false,banked);
 }
 function finish(win,total){
@@ -950,7 +950,7 @@ function finish(win,total){
     '<span class="amt">'+(e.win?'+':'')+fmt(e.total)+'</span></div>')).join('');
   render();
   setTimeout(()=>{state='idle';p=0;M=1;
-    if(balance<10){balance=1000;setBal(1000);$('msg').textContent='Demo credits refilled to 1,000.';}
+    if(balance<10){balance=1000;setBal(1000);$('msg').textContent='Demo balance refilled to $10.00.';}
     else $('msg').textContent=win?'Dive logged. Set your next stake.':'The trench keeps what it takes. Dive again when ready.';
     render();fairPanel();},2600);
 }
@@ -1281,7 +1281,7 @@ function renderNameRow(){
   const el=$('lbname');if(!el)return;
   if(username){el.innerHTML='Playing as <b>'+esc(username)+'</b> · <a id="lbchg" style="cursor:pointer;color:var(--brass)">change</a>';
     const c=$('lbchg');if(c)c.onclick=function(){username='';saveState();buildActivity();};}
-  else{el.innerHTML='<span style="width:100%;text-align:center;color:var(--steel);margin-bottom:2px">Choose a username to join the leaderboard</span><input id="lbnameinput" maxlength="16" placeholder="Pick a username" aria-label="Username"><button id="lbjoin" type="button">Join</button>';
+  else{el.innerHTML='<span style="width:100%;text-align:center;color:var(--steel);margin-bottom:2px">Choose a username to join the leaderboard</span><input id="lbnameinput" maxlength="7" placeholder="Pick a name (max 7)" aria-label="Username"><button id="lbjoin" type="button">Join</button>';
     const j=$('lbjoin');if(j)j.onclick=async function(){const v=cleanName(($('lbnameinput')||{}).value);const h=$('lbhead');if(v.length<2||badName(v)){if(h)h.textContent=(v.length<2?'Enter at least 2 characters':'Please choose a different name');return;}if(h)h.textContent='Checking name…';const st=await claimName(v);if(st==='taken'){if(h)h.textContent='That name is taken — pick another';return;}if(st==='blocked'){if(h)h.textContent='Please choose a different name';return;}username=v;saveState();lbSubmit();buildActivity();};}
 }
 
@@ -1296,14 +1296,14 @@ $("banktwo").onclick=bankHalf;
   d.addEventListener('contextmenu',e=>e.preventDefault());
 })();
 function updateJpHint(){
-  const v=Math.floor(Number($('stake').value))||0,ok=v>=JP_MIN_BET;
+  const v=Math.round(Number($('stake').value)*100)||0,ok=v>=JP_MIN_BET;
   const e=$('jphint');if(!e)return;
   e.className='jphint'+(ok?' ok':'');
   e.innerHTML=ok
     ?'◆ Jackpot eligible — this stake plays <b>The Vault</b> for the full progressive.'
-    :'◆ Stake <b>'+JP_MIN_BET+'+ CR</b> to qualify for the progressive jackpot.';
+    :'◆ Stake <b>'+fmt(JP_MIN_BET)+'+</b> to qualify for the progressive jackpot.';
 }
-document.querySelectorAll('.chip').forEach(c=>{c.onclick=()=>{sfx.click();$('stake').value=c.dataset.v==='max'?Math.floor(balance):c.dataset.v;updateJpHint();};});
+document.querySelectorAll('.chip').forEach(c=>{c.onclick=()=>{sfx.click();$('stake').value=c.dataset.v==='max'?(balance/100).toFixed(2):c.dataset.v;updateJpHint();};});
 $('stake').addEventListener('input',updateJpHint);updateJpHint();
 
 /* ---------- persistence (localStorage — fine on a hosted page) ---------- */
@@ -1350,7 +1350,7 @@ function rngFrom(seed){return function(){seed=seed+0x6D2B79F5|0;let t=Math.imul(
 
 /* ---------- online leaderboard (Supabase REST) ---------- */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function cleanName(s){return (s||'').replace(/[^A-Za-z0-9 _-]/g,'').trim().slice(0,16);}
+function cleanName(s){return (s||'').replace(/[^A-Za-z0-9 _-]/g,'').trim().slice(0,7);}
 const BADWORDS=['fuck','shit','cunt','bitch','asshole','nigger','nigga','faggot','fag','dick','pussy','cock','whore','slut','rape','retard','dahs'];
 function badName(s){const t=(s||'').toLowerCase().replace(/[^a-z]/g,'');return BADWORDS.some(function(w){return t.indexOf(w)>=0;});}
 async function lbSubmit(){
@@ -1364,12 +1364,12 @@ async function lbFetch(){
 /* ghost subs feed — public recent dives (read + insert) */
 async function rdFetch(){
   if(!LB_ON||typeof fetch!=='function')return;
-  try{const r=await fetch(SB_URL+'/rest/v1/recent_dives?order=ts.desc&limit=12&select=username,mult,won',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});
-    if(!r.ok)return;const rows=await r.json();if(Array.isArray(rows)){rdList=rows;if(!divers.length)initDivers();}}catch(e){}
+  try{const r=await fetch(SB_URL+'/rest/v1/recent_dives?order=ts.desc&limit=40&select=username,mult,won',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});
+    if(!r.ok)return;const rows=await r.json();if(Array.isArray(rows)){const seen={},cap=[];for(const e of rows){const k=(e.username||'').toLowerCase();seen[k]=(seen[k]||0)+1;if(seen[k]<=2)cap.push(e);}rdList=cap;if(!divers.length)initDivers();}}catch(e){}
 }
 function rdPost(mult,won){
   if(!LB_ON||typeof fetch!=='function'||!username)return;   // only post named dives to the public feed
-  try{fetch(SB_URL+'/rest/v1/recent_dives',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({username:username.slice(0,16),mult:Math.round((Number(mult)||1)*100)/100,won:!!won})});}catch(e){}
+  try{fetch(SB_URL+'/rest/v1/recent_dives',{method:'POST',headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({username:username.slice(0,7),mult:Math.round((Number(mult)||1)*100)/100,won:!!won})});}catch(e){}
 }
 /* claim a unique username (first-come, tied to anonymous device id) */
 async function claimName(name){
@@ -1410,20 +1410,22 @@ if(syncCode)syncLoad(syncCode);
   if(document.readyState==='complete')setTimeout(hide,650);
   else addEventListener('load',()=>setTimeout(hide,650));
   setTimeout(hide,2600); // never trap the player
-  const ss=$('setSound'),sm=$('setMotion'),sr=$('setReset');
+  const close=()=>{$('rules').classList.remove('open');};
   function syncSettings(){
+    const ss=$('setSound'),sm=$('setMotion');
     if(ss){ss.textContent=soundOn?'On':'Off';ss.classList.toggle('off',!soundOn);}
     if(sm){sm.textContent=motionOff?'On':'Off';sm.classList.toggle('off',!motionOff);}
   }
-  const open=()=>{syncSettings();$('rules').classList.add('open');};
-  const close=()=>{$('rules').classList.remove('open');};
+  function wireSettings(){            // settings buttons live in the modal (after </script>), so wire them lazily on open
+    const ss=$('setSound'),sm=$('setMotion'),sr=$('setReset');
+    if(ss&&!ss._w){ss._w=1;ss.onclick=()=>{soundOn=!soundOn;$('snd').textContent=soundOn?'♪':'∅';$('snd').classList.toggle('off',!soundOn);if(soundOn)sfx.click();syncSettings();saveState();};}
+    if(sm&&!sm._w){sm._w=1;sm.onclick=()=>{motionOff=!motionOff;reduce=osReduce||motionOff;syncSettings();saveState();};}
+    if(sr&&!sr._w){sr._w=1;sr.onclick=()=>{try{localStorage.removeItem(LS);}catch(e){}balance=1000;stats={dives:0,wins:0,best:0,deepest:0,biggest:0,vaults:0,wagered:0,returned:0,seasonBest:0,seasonId:0};username='';syncCode='';setBal(1000);buildActivity();close();$('msg').textContent='Progress reset — $10.00 balance.';};}
+  }
+  const open=()=>{wireSettings();syncSettings();$('rules').classList.add('open');};
   const ib=$('info');if(ib)ib.onclick=open;
-  const rc=$('rulesclose');if(rc)rc.onclick=close;
   const md=$('rules');if(md)md.addEventListener('click',e=>{if(e.target===md)close();});
   addEventListener('keydown',e=>{if(e.key==='Escape')close();});
-  if(ss)ss.onclick=()=>{soundOn=!soundOn;$('snd').textContent=soundOn?'♪':'∅';$('snd').classList.toggle('off',!soundOn);if(soundOn)sfx.click();syncSettings();saveState();};
-  if(sm)sm.onclick=()=>{motionOff=!motionOff;reduce=osReduce||motionOff;syncSettings();saveState();};
-  if(sr)sr.onclick=()=>{try{localStorage.removeItem(LS);}catch(e){}balance=1000;stats={dives:0,wins:0,best:0,deepest:0,biggest:0,vaults:0,wagered:0,returned:0,seasonBest:0,seasonId:0};username='';setBal(1000);buildActivity();close();$('msg').textContent='Progress reset — 1,000 demo credits.';};
 })();
 
 })();
@@ -1464,7 +1466,7 @@ document.addEventListener('click',function(e){
     <p><b>The countdown clock:</b> each time you stop, a short timer starts. Decide before it runs out — if it reaches zero you’re <b>automatically surfaced and paid</b>. It only ever cashes you out safely; it never dives you deeper, so hesitating can’t cost you your haul.</p>
     <p><b>Bank Half</b> locks in half your winnings while you keep diving with the rest — free insurance on a deep run.</p>
     <h3>◆ The jackpot</h3>
-    <p>Reach the very bottom — the <b>100× floor</b> — on a qualifying stake (<b>50+ credits</b>) and that 100× win is <b>banked instantly</b>. Then a <b>free bonus dive</b> into the Vault opens: ride it all the way to the floor and you win the <b>entire jackpot pool</b> on top. Come up short and you simply keep your 100× — the bonus risks nothing. The pool is <b>shared by everyone</b> and grows with every dive, climbing until someone cracks it.</p>
+    <p>Reach the very bottom — the <b>100× floor</b> — on a qualifying stake (<b>$0.50+</b>) and that 100× win is <b>banked instantly</b>. Then a <b>free bonus dive</b> into the Vault opens: ride it all the way to the floor and you win the <b>entire jackpot pool</b> on top. Come up short and you simply keep your 100× — the bonus risks nothing. The pool is <b>shared by everyone</b> and grows with every dive, climbing until someone cracks it.</p>
     <p style="font-size:10.5px;color:var(--steel-mute);margin-top:10px">96% RTP · provably fair · free demo, virtual credits, no real money · 18+</p>
     <h3>Settings</h3>
     <div class="set-row"><span>Sound effects</span><button class="set-tgl" id="setSound" type="button">On</button></div>
