@@ -587,7 +587,7 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
     <div class="card"><h4>Dive log</h4><div id="log"><div class="logempty">No dives recorded yet.</div></div></div>
   </div>
 </div>
-  <div class="statusbar"><span><b>18+</b> · Free demo · virtual credits · no real-money play</span><span>v<b>1.0.7</b></span></div>
+  <div class="statusbar"><span><b>18+</b> · Free demo · virtual credits · no real-money play</span><span>v<b>1.0.9</b></span></div>
 
 
 <script>
@@ -635,7 +635,7 @@ const sfx={
   bank:()=>{tone(880,1180,0.09,'triangle',0.05);},
   win:()=>{[523,659,784].forEach((f,i)=>tone(f,f,0.26,'sine',0.07,i*0.10));},
   bigwin:()=>{[392,523,659,784,1046].forEach((f,i)=>tone(f,f,0.32,'sine',0.075,i*0.11));},
-  breach:()=>{tone(130,42,0.55,'sawtooth',0.10);noise(0.5,0.11);},
+  breach:()=>{tone(150,38,0.34,'sine',0.15);tone(400,95,0.42,'triangle',0.05,0.02);noise(0.55,0.13);},
   tick:()=>tone(1500,1500,0.035,'sine',0.04),
   ticklast:()=>tone(1950,1950,0.08,'sine',0.06),
 };
@@ -761,7 +761,7 @@ function liveUpdate(){            // cheap per-frame HUD refresh while descendin
   $('gzone').textContent=zoneNameAt(p);$('gdepth').textContent=Math.round(p*100)+'%';
   $('nextname').textContent=zoneNameAt(p);   // live Current Zone (the gauge is hidden on phones)
   const cl=Math.floor(p*LV),r=$('risk');
-  if(r){if(cl<LV){const sv=Math.round(markerM(cl)/markerM(cl+1)*100);r.innerHTML='↓ <b>'+sv+'%</b> chance to reach '+zoneNameAt((cl+1)/LV);r.style.color=sv<45?'var(--coral)':(sv<70?'var(--brass)':'var(--steel-dim)');}else{r.textContent='At the floor — surface for the Vault.';r.style.color='var(--brass)';}}
+  if(r){if(cl<LV){let raw=markerM(cl)/markerM(cl+1);if(cl===0)raw*=RTP;const sv=Math.round(raw*100);r.innerHTML='↓ <b>'+sv+'%</b> chance to reach '+zoneNameAt((cl+1)/LV);r.style.color=sv<45?'var(--coral)':(sv<70?'var(--brass)':'var(--steel-dim)');}else{r.textContent='At the floor — surface for the Vault.';r.style.color='var(--brass)';}}
   const sf=$('surface');if(sf)sf.classList.toggle('ready',h>stake*1.3);
 }
 function render(){
@@ -1465,7 +1465,7 @@ document.addEventListener('click',function(e){
 <div class="modal" id="rules" role="dialog" aria-modal="true" aria-label="Game rules">
   <div class="modal-card">
     <h2>How to play <b>FATHOM</b></h2>
-    <div class="mv">v1.0.7 · RTP 96% + 1% ◆ jackpot · Provably fair · Free demo — virtual credits, no real-money play</div>
+    <div class="mv">v1.0.9 · RTP 96% + 1% ◆ jackpot · Provably fair · Free demo — virtual credits, no real-money play</div>
     <div class="rules-demo" aria-hidden="true"><span class="rd-sub rd-a"></span><span class="rd-sub rd-b"></span><span class="rd-sub rd-c"></span><span class="rd-floor">◆ THE VAULT · 100× FLOOR</span></div>
     <h3>The goal</h3>
     <p>Dive as deep as you dare, then surface with your winnings before the dive crashes. <b>The deeper you go, the bigger your multiplier grows — but the greater the chance you hit a hazard and lose everything at risk.</b> Knowing when to stop is the whole game.</p>
